@@ -343,8 +343,13 @@ export default function CarreraDeCaballos() {
         borderRadius: 10,
     };
 
+    const handleButtonClick = (e) => {
+        if (e.target.closest('button')) playGameSound('click');
+    };
+
     return (
         <div
+            onClick={handleButtonClick}
             className="min-h-screen text-white overflow-auto"
             style={{
                 backgroundImage: `linear-gradient(rgba(4,15,4,0.82), rgba(4,15,4,0.82)), url(${process.env.PUBLIC_URL}/background.jpg)`,
