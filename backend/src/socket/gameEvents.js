@@ -37,8 +37,9 @@ function broadcastRoom(io, room) {
       betAmount: p.betAmount,
       isReady:   p.isReady,
     })),
-    status:  room.status,
-    ownerId: room.ownerId,
+    status:               room.status,
+    ownerId:              room.ownerId,
+    bettingCurrentUserId: room.bettingOrder?.[room.currentBetIdx] ?? null,
   });
 }
 

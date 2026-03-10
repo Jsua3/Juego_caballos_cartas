@@ -46,9 +46,10 @@ export default function CarreraDeCaballos() {
 
   // Socket event listeners
   useEffect(() => {
-    const onRoomUpdated = ({ players, status, ownerId }) => {
-      setRoomState({ players, status, ownerId });
+    const onRoomUpdated = ({ players, status, ownerId, bettingCurrentUserId }) => {
+      setRoomState((prev) => ({ ...prev, players, status, ownerId, bettingCurrentUserId }));
       if (status === 'waiting') setPhase('waiting');
+      if (status === 'betting') setPhase('betting');
     };
 
     const onBettingStart = ({ currentUserId }) => {
