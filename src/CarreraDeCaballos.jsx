@@ -241,6 +241,7 @@ export default function CarreraDeCaballos() {
 /* ── Waiting Room ── */
 function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave }) {
   const { players = [], status } = roomState;
+  const { user } = useAuth();
   const canStart = players.length >= 2 && status === 'waiting';
 
   return (
@@ -266,28 +267,50 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave }) 
             JUGADORES ({players.length}/4)
           </h3>
           <div className="space-y-2">
-            {players.map((p, i) => (
-              <div key={p.userId} className="flex items-center gap-3 p-2 rounded-lg" style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.06)',
+            {players.map((p, i) => {
+              const isMe = p.userId === user?.id;
+              return (
+              <div key={p.userId} className="flex items-center gap-3 p-2 rounded-lg transition" style={{
+                background: isMe ? 'rgba(255,215,0,0.06)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isMe ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
               }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'rgba(184,134,11,0.15)', border: '1px solid rgba(184,134,11,0.3)', color: '#FFD700' }}>
-                  {i + 1}
+                {/* Avatar con número */}
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
+                    style={{ background: 'rgba(184,134,11,0.15)', border: `2px solid ${isMe ? '#FFD700' : 'rgba(184,134,11,0.3)'}`, color: '#FFD700' }}>
+                    {p.username.charAt(0).toUpperCase()}
+                  </div>
+                  {/* Punto verde online */}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-900"
+                    style={{ background: '#22C55E', boxShadow: '0 0 6px #22C55E' }} />
                 </div>
-                <div className="flex-1">
-                  <p className="text-white text-sm font-medium">{p.username}</p>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-white text-sm font-medium truncate">{p.username}</p>
+                    {isMe && <span className="text-yellow-500 text-xs">(tú)</span>}
+                  </div>
                   <p className="text-gray-500 text-xs">{p.points?.toLocaleString()} pts</p>
                 </div>
-                {roomState.ownerId === p.userId && (
-                  <span className="text-yellow-400 text-xs">👑 Dueño</span>
-                )}
+
+                <div className="flex items-center gap-2">
+                  {roomState.ownerId === p.userId && (
+                    <span className="text-yellow-400 text-xs">👑</span>
+                  )}
+                  <span className="text-green-400 text-xs font-medium">● En línea</span>
+                </div>
               </div>
-            ))}
+              );
+            })}
             {Array.from({ length: 4 - players.length }).map((_, i) => (
               <div key={`empty-${i}`} className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-gray-800">
-                <div className="w-8 h-8 rounded-full border border-dashed border-gray-700" />
-                <p className="text-gray-700 text-sm italic">Esperando jugador…</p>
+                <div className="w-9 h-9 rounded-full border border-dashed border-gray-700 flex items-center justify-center">
+                  <span className="text-gray-700 text-xs">?</span>
+                </div>
+                <div>
+                  <p className="text-gray-700 text-sm italic">Esperando jugador…</p>
+                  <p className="text-gray-800 text-xs">● Desconectado</p>
+                </div>
               </div>
             ))}
           </div>

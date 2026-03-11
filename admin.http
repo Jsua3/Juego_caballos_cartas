@@ -1,5 +1,5 @@
 POST https://juegocaballoscartas-production.up.railway.app/api/purchases/generate-code
     Content-Type: application/json
-    x-admin-secret: tu_clave_secreta
+    x-admin-secret: elbanano3
 
   { "points": 1000 }
