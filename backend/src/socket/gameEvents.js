@@ -19,6 +19,12 @@ const {
  * }
  */
 const rooms = new Map();
+const onlineUsers = new Map(); // socketId → { userId, username }
+
+function broadcastOnlineUsers(io) {
+  const list = Array.from(onlineUsers.values());
+  io.emit('online_users', list);
+}
 
 function getRoomBySocket(socketId) {
   for (const room of rooms.values()) {
@@ -165,6 +171,15 @@ async function startBetting(io, room) {
 module.exports = function registerGameEvents(io) {
   io.on('connection', (socket) => {
     console.log('Socket connected:', socket.id);
+
+    // ── authenticate (lobby online presence) ─────────────────────────────────
+    socket.on('authenticate', ({ token }) => {
+      try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        onlineUsers.set(socket.id, { userId: payload.id, username: payload.username });
+        broadcastOnlineUsers(io);
+      } catch { /* token inválido, ignorar */ }
+    });
 
     // ── join_room ────────────────────────────────────────────────────────────
     socket.on('join_room', async ({ roomCode, token }) => {
@@ -342,6 +357,8 @@ module.exports = function registerGameEvents(io) {
     // ── disconnect ───────────────────────────────────────────────────────────
     socket.on('disconnect', () => {
       console.log('Socket disconnected:', socket.id);
+      onlineUsers.delete(socket.id);
+      broadcastOnlineUsers(io);
       const room = getRoomBySocket(socket.id);
       if (!room) return;
 

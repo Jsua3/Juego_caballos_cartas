@@ -186,20 +186,50 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
           </div>
         )}
 
-        {/* Track — penalty cards */}
+        {/* Track — penalty cards (se revelan cuando todos los caballos pasan esa columna) */}
         {trackCards && trackCards.length > 0 && (
           <div className="rounded-xl border border-yellow-600/20 bg-black/50 p-3 mb-4">
             <p className="text-yellow-700 text-xs text-center mb-2" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
               CARTAS DE PENALIZACIÓN
             </p>
             <div className="flex justify-center gap-3">
-              {trackCards.map((suit, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <CasinoCard suitId={suit} small />
-                  <span className="text-gray-500 text-xs">pos {i + 1}</span>
-                </div>
-              ))}
+              {trackCards.map((suit, i) => {
+                // Se revela cuando el caballo más retrasado supera esta posición
+                const minPos = Math.min(...Object.values(positions));
+                const revealed = minPos > i;
+                const triggerPos = i + 1;
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div style={{ transition: 'all 0.4s', transform: revealed ? 'rotateY(0deg)' : 'rotateY(0deg)' }}>
+                      {revealed ? (
+                        <div style={{ position: 'relative' }}>
+                          <CasinoCard suitId={suit} small />
+                          {/* Brillo al revelar */}
+                          <div style={{
+                            position: 'absolute', inset: 0, borderRadius: 6,
+                            boxShadow: `0 0 14px ${getSuit(suit)?.glow ?? '#FFD70060'}`,
+                            pointerEvents: 'none',
+                          }} />
+                        </div>
+                      ) : (
+                        <CasinoCard faceDown small />
+                      )}
+                    </div>
+                    <span className="text-xs" style={{ color: revealed ? getSuit(suit)?.color : '#4B5563' }}>
+                      col {triggerPos}
+                    </span>
+                    {revealed && (
+                      <span className="text-xs font-bold" style={{ color: getSuit(suit)?.color }}>
+                        ⚠️ {getSuit(suit)?.name}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+            <p className="text-gray-600 text-xs text-center mt-2">
+              Cuando todos pasen una columna, se revela qué palo retrocede
+            </p>
           </div>
         )}
 

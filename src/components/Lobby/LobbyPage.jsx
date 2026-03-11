@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
 
-export default function LobbyPage({ onJoinRoom }) {
+export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
   const { token } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function LobbyPage({ onJoinRoom }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 pt-16 px-4 pb-8">
+    <div className="min-h-screen bg-gray-950 pt-16 px-4 pb-20">
       <div className="max-w-2xl mx-auto">
         <h2 className="text-2xl font-bold text-yellow-400 mb-6 mt-4">Salas disponibles</h2>
 
@@ -122,6 +122,31 @@ export default function LobbyPage({ onJoinRoom }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Jugadores en línea — barra inferior fija */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-green-600/20 px-4 py-2 z-40">
+        <div className="max-w-2xl mx-auto flex items-center gap-3 overflow-x-auto">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-green-400" style={{ boxShadow: '0 0 6px #22C55E' }} />
+            <span className="text-green-400 text-xs font-bold whitespace-nowrap">
+              {onlinePlayers.length} en línea
+            </span>
+          </div>
+          <div className="w-px h-4 bg-gray-700 shrink-0" />
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {onlinePlayers.length === 0 ? (
+              <span className="text-gray-600 text-xs italic">Nadie conectado aún…</span>
+            ) : (
+              onlinePlayers.map((p) => (
+                <div key={p.userId} className="flex items-center gap-1.5 shrink-0 bg-green-900/20 border border-green-700/30 rounded-full px-2.5 py-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  <span className="text-green-300 text-xs font-medium">{p.username}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

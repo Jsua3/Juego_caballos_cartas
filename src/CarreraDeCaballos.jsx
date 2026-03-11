@@ -22,6 +22,7 @@ export default function CarreraDeCaballos() {
 
   const [phase, setPhase] = useState('lobby');
   const [roomCode, setRoomCode] = useState(null);
+  const [onlinePlayers, setOnlinePlayers] = useState([]);
   const [roomState, setRoomState] = useState({ players: [], status: 'waiting', ownerId: null });
   const [raceState, setRaceState] = useState({
     positions: { oros: 0, copas: 0, espadas: 0, bastos: 0 },
@@ -35,14 +36,15 @@ export default function CarreraDeCaballos() {
   const [socketError, setSocketError] = useState('');
   const [notification, setNotification] = useState('');
 
-  // Connect socket when component mounts
+  // Connect socket and authenticate for online presence
   useEffect(() => {
     if (!token) return;
-    if (!socket.connected) socket.connect();
-
-    return () => {
-      // Don't disconnect — socket is a singleton; leave_room handles cleanup
-    };
+    if (!socket.connected) {
+      socket.connect();
+      socket.once('connect', () => socket.emit('authenticate', { token }));
+    } else {
+      socket.emit('authenticate', { token });
+    }
   }, [token]);
 
   // Socket event listeners
@@ -105,6 +107,8 @@ export default function CarreraDeCaballos() {
       setTimeout(() => setNotification(''), 4000);
     };
 
+    const onOnlineUsers = (list) => setOnlinePlayers(list);
+
     const onRaceCancelled = ({ message }) => {
       setSocketError(message);
       setPhase('waiting');
@@ -120,6 +124,7 @@ export default function CarreraDeCaballos() {
     socket.on('error', onError);
     socket.on('player_left', onPlayerLeft);
     socket.on('race_cancelled', onRaceCancelled);
+    socket.on('online_users', onOnlineUsers);
 
     return () => {
       socket.off('room_updated', onRoomUpdated);
@@ -131,6 +136,7 @@ export default function CarreraDeCaballos() {
       socket.off('error', onError);
       socket.off('player_left', onPlayerLeft);
       socket.off('race_cancelled', onRaceCancelled);
+      socket.off('online_users', onOnlineUsers);
     };
   }, [user, updatePoints]);
 
@@ -194,7 +200,7 @@ export default function CarreraDeCaballos() {
 
       {/* Phase rendering */}
       {phase === 'lobby' && (
-        <LobbyPage onJoinRoom={handleJoinRoom} />
+        <LobbyPage onJoinRoom={handleJoinRoom} onlinePlayers={onlinePlayers} />
       )}
 
       {phase === 'waiting' && (
