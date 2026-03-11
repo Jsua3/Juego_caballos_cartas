@@ -344,12 +344,73 @@ module.exports = function registerGameEvents(io) {
       console.log('Socket disconnected:', socket.id);
       const room = getRoomBySocket(socket.id);
       if (!room) return;
+
+      const leaving = room.players.find((p) => p.socketId === socket.id);
       room.players = room.players.filter((p) => p.socketId !== socket.id);
+
       if (room.players.length === 0) {
         if (room.raceInterval) clearInterval(room.raceInterval);
         rooms.delete(room.roomCode);
         return;
       }
+
+      // Si el dueño se va, el siguiente jugador toma el control
+      if (room.ownerId === leaving?.userId) {
+        room.ownerId = room.players[0].userId;
+      }
+
+      // Notificar a todos que alguien se fue
+      io.to(room.roomCode).emit('player_left', {
+        username: leaving?.username ?? 'Un jugador',
+      });
+
+      // Si se va durante apuestas, ajustar el orden
+      if (room.status === 'betting' && leaving) {
+        const leavingIdx = room.bettingOrder.indexOf(leaving.userId);
+        if (leavingIdx !== -1) {
+          room.bettingOrder.splice(leavingIdx, 1);
+          // Si era su turno o anterior, ajustar índice
+          if (leavingIdx < room.currentBetIdx) {
+            room.currentBetIdx--;
+          }
+          // Si ya todos los restantes apostaron → iniciar carrera
+          if (room.currentBetIdx >= room.bettingOrder.length) {
+            broadcastRoom(io, room);
+            setTimeout(() => startRace(io, room), 1500);
+            return;
+          }
+          // Si solo queda 1 jugador → cancelar y volver a waiting
+          if (room.players.length < 2) {
+            room.status = 'waiting';
+            room.bettingOrder = [];
+            room.currentBetIdx = 0;
+            room.players.forEach((p) => { p.betSuit = null; p.betAmount = null; });
+            broadcastRoom(io, room);
+            return;
+          }
+          // Avisar quién apuesta ahora
+          io.to(room.roomCode).emit('betting_start', {
+            order:         room.bettingOrder,
+            currentUserId: room.bettingOrder[room.currentBetIdx],
+          });
+        }
+      }
+
+      // Si se va durante la carrera y solo queda 1 jugador → cancelar carrera
+      if (room.status === 'racing' && room.players.length < 2) {
+        if (room.raceInterval) {
+          clearInterval(room.raceInterval);
+          room.raceInterval = null;
+        }
+        room.status = 'waiting';
+        room.players.forEach((p) => { p.betSuit = null; p.betAmount = null; });
+        io.to(room.roomCode).emit('race_cancelled', {
+          message: 'La carrera fue cancelada porque un jugador abandonó.',
+        });
+        broadcastRoom(io, room);
+        return;
+      }
+
       broadcastRoom(io, room);
     });
   });

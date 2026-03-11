@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 const SUITS = [
@@ -34,10 +35,21 @@ function Confetti() {
   );
 }
 
+function playSound(type) {
+  try {
+    const audio = new Audio(`${process.env.PUBLIC_URL}/sounds/${type}.mp3`);
+    audio.play().catch(() => {});
+  } catch (_) {}
+}
+
 export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeaveLobby }) {
   const { user, updatePoints } = useAuth();
   const suit = getSuit(winnerSuit);
   const myResult = results?.find((r) => r.userId === user?.id);
+
+  useEffect(() => {
+    playSound('win');
+  }, []);
 
   // Update points in context
   if (myResult?.pointsAfter !== undefined) {

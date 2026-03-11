@@ -1,6 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
+function playSound(type) {
+  try {
+    const audio = new Audio(`${process.env.PUBLIC_URL}/sounds/${type}.mp3`);
+    audio.play().catch(() => {});
+  } catch (_) {}
+}
+
 const SUITS = [
   { id: 'oros',    name: 'Oros',    emoji: '🪙', color: '#FFD700', glow: '#FFD70060', symbol: '⬤' },
   { id: 'copas',   name: 'Copas',   emoji: '🏆', color: '#DC2626', glow: '#DC262660', symbol: '♥' },
@@ -91,10 +98,15 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
   useEffect(() => {
     if (currentCard) {
       const suit = getSuit(currentCard.suit);
-      const msg = penaltySuit
-        ? `🃏 ${suit?.name} avanza ⚠️ ${getSuit(penaltySuit)?.name} retrocede`
-        : `🃏 ${suit?.name} ${suit?.symbol} → avanza`;
-      setLog((prev) => [...prev.slice(-60), { msg, id: Date.now() }]);
+      if (penaltySuit) {
+        playSound('retreat');
+        const msg = `🃏 ${suit?.name} avanza ⚠️ ${getSuit(penaltySuit)?.name} retrocede`;
+        setLog((prev) => [...prev.slice(-60), { msg, id: Date.now() }]);
+      } else {
+        playSound('advance');
+        const msg = `🃏 ${suit?.name} ${suit?.symbol} → avanza`;
+        setLog((prev) => [...prev.slice(-60), { msg, id: Date.now() }]);
+      }
     }
   }, [currentCard, penaltySuit]);
 
@@ -103,6 +115,7 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
   }, [log]);
 
   const bettingPlayers = players?.filter((p) => p.betSuit) ?? [];
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen pt-16 px-2 pb-6" style={{
@@ -113,6 +126,7 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
       <style>{`
         @keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(255,215,0,0.3)} 50%{box-shadow:0 0 40px rgba(255,215,0,0.7)} }
         .pulse-ring { animation: pulse-glow 2s ease-in-out infinite; }
+        @keyframes card-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
       `}</style>
 
       <div className="max-w-2xl mx-auto mt-4">
@@ -127,20 +141,48 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
           </h2>
         </div>
 
-        {/* Players bets */}
+        {/* Players con sus cartas apostadas */}
         {bettingPlayers.length > 0 && (
-          <div className="flex gap-2 justify-center mb-4 flex-wrap">
-            {bettingPlayers.map((p) => {
-              const suit = getSuit(p.betSuit);
-              return (
-                <div key={p.userId} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
-                  style={{ background: `${suit?.color}20`, border: `1px solid ${suit?.color}60`, color: suit?.color }}>
-                  <span>{suit?.emoji}</span>
-                  <span>{p.username}</span>
-                  <span className="opacity-70">{p.betAmount?.toLocaleString()}pts</span>
-                </div>
-              );
-            })}
+          <div className="rounded-xl border border-yellow-600/20 bg-black/50 p-3 mb-4">
+            <p className="text-yellow-700 text-xs text-center mb-3" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
+              JUGADORES
+            </p>
+            <div className="flex justify-center gap-4 flex-wrap">
+              {bettingPlayers.map((p) => {
+                const suit = getSuit(p.betSuit);
+                const isWinning = (positions[p.betSuit] ?? 0) === Math.max(...Object.values(positions));
+                const isMe = p.userId === user?.id;
+                return (
+                  <div key={p.userId} className="flex flex-col items-center gap-1.5">
+                    {/* Carta */}
+                    <div style={{
+                      animation: isWinning ? 'card-bounce 1s ease-in-out infinite' : 'none',
+                    }}>
+                      <CasinoCard suitId={p.betSuit} small />
+                    </div>
+                    {/* Avatar */}
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                      style={{
+                        background: `${suit?.color}25`,
+                        border: `2px solid ${isMe ? '#FFD700' : suit?.color}`,
+                        color: isMe ? '#FFD700' : suit?.color,
+                        boxShadow: isMe ? '0 0 10px rgba(255,215,0,0.4)' : 'none',
+                      }}>
+                      {p.username.charAt(0).toUpperCase()}
+                    </div>
+                    {/* Nombre y apuesta */}
+                    <div className="text-center">
+                      <p className="text-xs font-bold" style={{ color: isMe ? '#FFD700' : '#D1D5DB' }}>
+                        {p.username}{isMe ? ' (tú)' : ''}
+                      </p>
+                      <p className="text-xs" style={{ color: suit?.color }}>
+                        {suit?.emoji} {p.betAmount?.toLocaleString()}pts
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

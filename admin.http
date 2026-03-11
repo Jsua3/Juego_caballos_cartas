@@ -1,0 +1,5 @@
+POST https://juegocaballoscartas-production.up.railway.app/api/purchases/generate-code
+    Content-Type: application/json
+    x-admin-secret: tu_clave_secreta
+
+  { "points": 1000 }

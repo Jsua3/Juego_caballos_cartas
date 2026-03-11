@@ -43,6 +43,16 @@ CREATE TABLE IF NOT EXISTS transactions (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS redemption_codes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  code       VARCHAR(20) UNIQUE NOT NULL,
+  points     INT DEFAULT 1000,
+  used_by    INT NULL,
+  used_at    TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (used_by) REFERENCES users(id)
+);
+
 CREATE TABLE IF NOT EXISTS point_purchases (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   user_id       INT,

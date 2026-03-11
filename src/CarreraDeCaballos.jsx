@@ -33,6 +33,7 @@ export default function CarreraDeCaballos() {
   const [winnerSuit, setWinnerSuit] = useState(null);
   const [showPurchase, setShowPurchase] = useState(false);
   const [socketError, setSocketError] = useState('');
+  const [notification, setNotification] = useState('');
 
   // Connect socket when component mounts
   useEffect(() => {
@@ -99,6 +100,17 @@ export default function CarreraDeCaballos() {
       setTimeout(() => setSocketError(''), 4000);
     };
 
+    const onPlayerLeft = ({ username }) => {
+      setNotification(`${username} abandonó la partida`);
+      setTimeout(() => setNotification(''), 4000);
+    };
+
+    const onRaceCancelled = ({ message }) => {
+      setSocketError(message);
+      setPhase('waiting');
+      setTimeout(() => setSocketError(''), 5000);
+    };
+
     socket.on('room_updated', onRoomUpdated);
     socket.on('betting_start', onBettingStart);
     socket.on('bet_confirmed', onBetConfirmed);
@@ -106,6 +118,8 @@ export default function CarreraDeCaballos() {
     socket.on('card_drawn', onCardDrawn);
     socket.on('race_finished', onRaceFinished);
     socket.on('error', onError);
+    socket.on('player_left', onPlayerLeft);
+    socket.on('race_cancelled', onRaceCancelled);
 
     return () => {
       socket.off('room_updated', onRoomUpdated);
@@ -115,6 +129,8 @@ export default function CarreraDeCaballos() {
       socket.off('card_drawn', onCardDrawn);
       socket.off('race_finished', onRaceFinished);
       socket.off('error', onError);
+      socket.off('player_left', onPlayerLeft);
+      socket.off('race_cancelled', onRaceCancelled);
     };
   }, [user, updatePoints]);
 
@@ -166,6 +182,13 @@ export default function CarreraDeCaballos() {
       {socketError && (
         <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 border border-red-500/50 text-red-200 px-4 py-2 rounded-lg text-sm shadow-xl">
           ⚠️ {socketError}
+        </div>
+      )}
+
+      {/* Notification toast */}
+      {notification && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-yellow-900/90 border border-yellow-600/50 text-yellow-200 px-4 py-2 rounded-lg text-sm shadow-xl">
+          👋 {notification}
         </div>
       )}
 

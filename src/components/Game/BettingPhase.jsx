@@ -10,12 +10,24 @@ const SUITS = [
 
 function getSuit(id) { return SUITS.find((s) => s.id === id); }
 
+function playSound(type) {
+  try {
+    const audio = new Audio(`${process.env.PUBLIC_URL}/sounds/${type}.mp3`);
+    audio.play().catch(() => {});
+  } catch (_) {}
+}
+
 export default function BettingPhase({ roomState, onPlaceBet }) {
   const { user } = useAuth();
   const [selectedSuit, setSelectedSuit] = useState(null);
   const [betAmount, setBetAmount] = useState(100);
 
   const { players = [], bettingCurrentUserId } = roomState;
+
+  // Palos ya tomados por otros jugadores
+  const takenSuits = players
+    .filter((p) => p.betSuit && p.userId !== user?.id)
+    .map((p) => p.betSuit);
   const myPlayer = players.find((p) => p.userId === user?.id);
   const currentPlayer = players.find((p) => p.userId === bettingCurrentUserId);
   const isMyTurn = bettingCurrentUserId === user?.id;
@@ -24,6 +36,7 @@ export default function BettingPhase({ roomState, onPlaceBet }) {
 
   const handlePlaceBet = () => {
     if (!selectedSuit || betAmount < 50 || betAmount > maxBet) return;
+    playSound('click');
     onPlaceBet(selectedSuit, betAmount);
   };
 
@@ -95,24 +108,35 @@ export default function BettingPhase({ roomState, onPlaceBet }) {
 
             {/* Suit selection */}
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {SUITS.map((suit) => (
+              {SUITS.map((suit) => {
+                const isTaken = takenSuits.includes(suit.id);
+                const isSelected = selectedSuit === suit.id;
+                const takenBy = players.find((p) => p.betSuit === suit.id);
+                return (
                 <button
                   key={suit.id}
-                  onClick={() => setSelectedSuit(suit.id)}
-                  className="rounded-xl p-4 flex flex-col items-center gap-1.5 transition-all duration-200"
+                  onClick={() => !isTaken && setSelectedSuit(suit.id)}
+                  disabled={isTaken}
+                  className="rounded-xl p-4 flex flex-col items-center gap-1.5 transition-all duration-200 relative"
                   style={{
-                    background: selectedSuit === suit.id ? `${suit.color}20` : 'rgba(255,255,255,0.04)',
-                    border: `2px solid ${selectedSuit === suit.id ? suit.color : 'rgba(255,255,255,0.1)'}`,
-                    boxShadow: selectedSuit === suit.id ? `0 0 20px ${suit.glow}` : 'none',
-                    transform: selectedSuit === suit.id ? 'scale(1.03)' : 'scale(1)',
+                    background: isTaken ? 'rgba(255,255,255,0.02)' : isSelected ? `${suit.color}20` : 'rgba(255,255,255,0.04)',
+                    border: `2px solid ${isTaken ? 'rgba(255,255,255,0.06)' : isSelected ? suit.color : 'rgba(255,255,255,0.1)'}`,
+                    boxShadow: isSelected ? `0 0 20px ${suit.glow}` : 'none',
+                    transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                    opacity: isTaken ? 0.4 : 1,
+                    cursor: isTaken ? 'not-allowed' : 'pointer',
                   }}
                 >
                   <span className="text-3xl">{suit.emoji}</span>
                   <span className="text-white font-bold text-sm" style={{ fontFamily: "'Cinzel', serif" }}>
                     {suit.name}
                   </span>
+                  {isTaken && (
+                    <span className="text-xs text-gray-500">({takenBy?.username})</span>
+                  )}
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             {/* Bet amount */}
