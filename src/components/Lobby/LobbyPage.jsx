@@ -52,7 +52,10 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 pt-16 px-4 pb-20">
+    <div className="min-h-screen pt-16 px-4 pb-20" style={{
+      backgroundImage: `linear-gradient(rgba(4,10,4,0.85), rgba(4,10,4,0.85)), url(${process.env.PUBLIC_URL}/background.jpg)`,
+      backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
+    }}>
       <div className="max-w-2xl mx-auto">
         <h2 className="text-2xl font-bold text-yellow-400 mb-6 mt-4">Salas disponibles</h2>
 
