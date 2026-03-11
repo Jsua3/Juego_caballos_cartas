@@ -29,6 +29,7 @@ export default function CarreraDeCaballos() {
     currentCard: null,
     penaltySuit: null,
     trackCards: [],
+    revealedCount: 0,
   });
   const [results, setResults] = useState(null);
   const [winnerSuit, setWinnerSuit] = useState(null);
@@ -80,12 +81,19 @@ export default function CarreraDeCaballos() {
         currentCard: null,
         penaltySuit: null,
         trackCards,
+        revealedCount: 0,
       });
       setPhase('racing');
     };
 
-    const onCardDrawn = ({ card, positions, penaltySuit }) => {
-      setRaceState((prev) => ({ ...prev, currentCard: card, positions, penaltySuit: penaltySuit ?? null }));
+    const onCardDrawn = ({ card, positions, penaltySuit, revealedCount }) => {
+      setRaceState((prev) => ({
+        ...prev,
+        currentCard: card,
+        positions,
+        penaltySuit: penaltySuit ?? null,
+        revealedCount: revealedCount ?? prev.revealedCount,
+      }));
     };
 
     const onRaceFinished = ({ winnerSuit, results }) => {
@@ -226,6 +234,7 @@ export default function CarreraDeCaballos() {
           currentCard={raceState.currentCard}
           penaltySuit={raceState.penaltySuit}
           trackCards={raceState.trackCards}
+          revealedCount={raceState.revealedCount}
           players={roomState.players}
         />
       )}

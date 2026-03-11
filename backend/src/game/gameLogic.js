@@ -46,39 +46,37 @@ function dealTrackCards(deck) {
 }
 
 /**
- * Given current positions (map suit→position) and a drawn card suit,
- * advance that suit by 1 and check for track penalty.
+ * Advance drawnSuit by 1 and check if the SLOWEST horse just crossed
+ * the next penalty threshold (same rule as the real card game).
  *
- * trackCards[i] = suit penalised when any horse reaches position (i+1).
- * A penalised horse steps BACK 1 from its current position (minimum 0).
+ * trackCards[i] = suit penalised when ALL horses have passed column i+1,
+ * i.e. when min(positions) > i  (after the advance).
  *
- * Returns { newPositions, penaltySuit | null }
+ * revealedCount = how many penalty cards have already been revealed this race.
+ *
+ * Returns { newPositions, penaltySuit | null, revealedCount }
  */
-function processCardDraw(positions, drawnSuit, trackCards) {
+function processCardDraw(positions, drawnSuit, trackCards, revealedCount) {
   const newPositions = { ...positions };
 
   // Advance drawn suit
   newPositions[drawnSuit] = (newPositions[drawnSuit] || 0) + 1;
 
-  // Check if this advance triggers a track penalty (only for non-drawn suits)
-  // Track card at index i triggers when ANY horse reaches position (i+1)
   let penaltySuit = null;
-  for (let i = 0; i < trackCards.length; i++) {
-    const triggerPos = i + 1; // positions 1,2,3,4
-    const penalisedSuit = trackCards[i];
-    // Trigger when drawnSuit just reached triggerPos AND penalisedSuit != drawnSuit
-    if (
-      newPositions[drawnSuit] === triggerPos &&
-      penalisedSuit !== drawnSuit &&
-      newPositions[penalisedSuit] > 0
-    ) {
+  let newRevealedCount = revealedCount;
+
+  // Reveal next card when the SLOWEST horse clears the threshold
+  const minPos = Math.min(...SUITS.map((s) => newPositions[s] || 0));
+  if (newRevealedCount < trackCards.length && minPos > newRevealedCount) {
+    const penalisedSuit = trackCards[newRevealedCount];
+    newRevealedCount++;
+    if (newPositions[penalisedSuit] > 0) {
       newPositions[penalisedSuit] = Math.max(0, newPositions[penalisedSuit] - 1);
       penaltySuit = penalisedSuit;
-      break; // only one penalty per draw
     }
   }
 
-  return { newPositions, penaltySuit };
+  return { newPositions, penaltySuit, revealedCount: newRevealedCount };
 }
 
 /**

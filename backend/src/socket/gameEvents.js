@@ -124,9 +124,10 @@ function startRace(io, room) {
 
   const deck = shuffleDeck(createDeck());
   const { trackCards, remainingDeck } = dealTrackCards(deck);
-  room.deck       = remainingDeck;
-  room.trackCards = trackCards;
-  room.positions  = Object.fromEntries(SUITS.map((s) => [s, 0]));
+  room.deck          = remainingDeck;
+  room.trackCards    = trackCards;
+  room.positions     = Object.fromEntries(SUITS.map((s) => [s, 0]));
+  room.revealedCount = 0;
 
   pool.query('UPDATE game_rooms SET status = ? WHERE id = ?', ['racing', room.dbRoomId]).catch(console.error);
 
@@ -139,13 +140,17 @@ function startRace(io, room) {
     }
 
     const card = room.deck.shift();
-    const { newPositions, penaltySuit } = processCardDraw(room.positions, card.suit, room.trackCards);
-    room.positions = newPositions;
+    const { newPositions, penaltySuit, revealedCount } = processCardDraw(
+      room.positions, card.suit, room.trackCards, room.revealedCount
+    );
+    room.positions     = newPositions;
+    room.revealedCount = revealedCount;
 
     io.to(room.roomCode).emit('card_drawn', {
       card,
-      positions:   room.positions,
+      positions:     room.positions,
       penaltySuit,
+      revealedCount: room.revealedCount,
     });
 
     const winner = checkWinner(room.positions);

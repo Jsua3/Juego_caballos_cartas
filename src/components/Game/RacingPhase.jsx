@@ -91,7 +91,7 @@ function CasinoCard({ suitId, faceDown = false, small = false }) {
   );
 }
 
-export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, players }) {
+export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players }) {
   const logRef = useRef(null);
   const [log, setLog] = useState([]);
 
@@ -194,9 +194,8 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
             </p>
             <div className="flex justify-center gap-3">
               {trackCards.map((suit, i) => {
-                // Se revela cuando el caballo más retrasado supera esta posición
-                const minPos = Math.min(...Object.values(positions));
-                const revealed = minPos > i;
+                // Autoridad del servidor: carta i revelada si revealedCount > i
+                const revealed = revealedCount > i;
                 const triggerPos = i + 1;
                 return (
                   <div key={i} className="flex flex-col items-center gap-1">
