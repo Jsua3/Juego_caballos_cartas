@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/Juego_caballos_cartas/static/css/main.dd75f4ba.css",
-    "main.js": "/Juego_caballos_cartas/static/js/main.e810bdda.js",
+    "main.js": "/Juego_caballos_cartas/static/js/main.fa50a5f0.js",
     "index.html": "/Juego_caballos_cartas/index.html",
     "main.dd75f4ba.css.map": "/Juego_caballos_cartas/static/css/main.dd75f4ba.css.map",
-    "main.e810bdda.js.map": "/Juego_caballos_cartas/static/js/main.e810bdda.js.map"
+    "main.fa50a5f0.js.map": "/Juego_caballos_cartas/static/js/main.fa50a5f0.js.map"
   },
   "entrypoints": [
     "static/css/main.dd75f4ba.css",
-    "static/js/main.e810bdda.js"
+    "static/js/main.fa50a5f0.js"
   ]
 }
