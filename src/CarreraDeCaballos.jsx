@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './context/AuthContext';
+import { playSound } from './utils/sound';
 import socket from './socket';
 import LobbyPage from './components/Lobby/LobbyPage';
 import BettingPhase from './components/Game/BettingPhase';
@@ -333,7 +334,7 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave }) 
 
         <div className="flex gap-3">
           <button
-            onClick={onLeave}
+            onClick={() => { playSound('click'); onLeave(); }}
             className="flex-1 py-3 rounded-xl font-medium text-gray-400 transition"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
@@ -341,7 +342,7 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave }) 
           </button>
           {isOwner && (
             <button
-              onClick={onStartBetting}
+              onClick={() => { playSound('click'); onStartBetting(); }}
               disabled={!canStart}
               className="flex-1 py-3 rounded-xl font-bold text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
               style={{

@@ -1,4 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 
 export default function UserBar({ onPurchase }) {
   const { user, logout } = useAuth();
@@ -17,7 +18,7 @@ export default function UserBar({ onPurchase }) {
           <span className="text-yellow-600 text-xs">pts</span>
         </div>
         <button
-          onClick={onPurchase}
+          onClick={() => { playSound('click'); onPurchase(); }}
           title="Comprar o canjear puntos"
           className="flex items-center gap-1 bg-green-700/80 hover:bg-green-600 border border-green-500/40 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition"
         >
@@ -25,7 +26,7 @@ export default function UserBar({ onPurchase }) {
           <span className="hidden sm:inline">Puntos</span>
         </button>
         <button
-          onClick={logout}
+          onClick={() => { playSound('click'); logout(); }}
           className="text-gray-400 hover:text-white text-xs transition"
         >
           Salir

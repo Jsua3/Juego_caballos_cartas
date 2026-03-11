@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 
 const SUITS = [
   { id: 'oros',    name: 'Oros',    emoji: '🪙', color: '#FFD700', glow: '#FFD70060' },
@@ -9,13 +10,6 @@ const SUITS = [
 ];
 
 function getSuit(id) { return SUITS.find((s) => s.id === id); }
-
-function playSound(type) {
-  try {
-    const audio = new Audio(`${process.env.PUBLIC_URL}/sounds/${type}.mp3`);
-    audio.play().catch(() => {});
-  } catch (_) {}
-}
 
 export default function BettingPhase({ roomState, onPlaceBet }) {
   const { user } = useAuth();
@@ -115,7 +109,7 @@ export default function BettingPhase({ roomState, onPlaceBet }) {
                 return (
                 <button
                   key={suit.id}
-                  onClick={() => !isTaken && setSelectedSuit(suit.id)}
+                  onClick={() => { if (!isTaken) { playSound('click'); setSelectedSuit(suit.id); } }}
                   disabled={isTaken}
                   className="rounded-xl p-4 flex flex-col items-center gap-1.5 transition-all duration-200 relative"
                   style={{
@@ -167,7 +161,7 @@ export default function BettingPhase({ roomState, onPlaceBet }) {
                 {[50, 100, 200, 500].map((v) => (
                   <button
                     key={v}
-                    onClick={() => setBetAmount(Math.min(v, maxBet))}
+                    onClick={() => { playSound('click'); setBetAmount(Math.min(v, maxBet)); }}
                     disabled={v > maxBet}
                     className="flex-1 text-xs py-1.5 rounded-lg font-bold transition disabled:opacity-30"
                     style={{ background: 'rgba(184,134,11,0.2)', border: '1px solid rgba(184,134,11,0.4)', color: '#FFD700' }}

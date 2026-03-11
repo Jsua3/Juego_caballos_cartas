@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 
 export default function PurchaseModal({ onClose }) {
   const { token, updatePoints } = useAuth();
@@ -60,7 +61,7 @@ export default function PurchaseModal({ onClose }) {
         {/* Tabs */}
         <div className="flex rounded-xl overflow-hidden border border-gray-700 mb-6">
           <button
-            onClick={() => { setTab('redeem'); setError(''); setSuccess(''); }}
+            onClick={() => { playSound('click'); setTab('redeem'); setError(''); setSuccess(''); }}
             className="flex-1 py-2 text-sm font-bold transition"
             style={{
               background: tab === 'redeem' ? 'rgba(255,215,0,0.15)' : 'transparent',
@@ -71,7 +72,7 @@ export default function PurchaseModal({ onClose }) {
             🎟️ Canjear código
           </button>
           <button
-            onClick={() => { setTab('request'); setError(''); setSuccess(''); }}
+            onClick={() => { playSound('click'); setTab('request'); setError(''); setSuccess(''); }}
             className="flex-1 py-2 text-sm font-bold transition"
             style={{
               background: tab === 'request' ? 'rgba(255,215,0,0.15)' : 'transparent',
@@ -99,12 +100,12 @@ export default function PurchaseModal({ onClose }) {
               className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white text-center font-mono text-lg tracking-widest focus:outline-none focus:border-yellow-500 mb-4"
             />
             <div className="flex gap-3">
-              <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-gray-400 text-sm transition"
+              <button onClick={() => { playSound('click'); onClose(); }} className="flex-1 py-2.5 rounded-xl text-gray-400 text-sm transition"
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 Cancelar
               </button>
               <button
-                onClick={handleRedeem}
+                onClick={() => { playSound('click'); handleRedeem(); }}
                 disabled={loading || !code.trim()}
                 className="flex-1 py-2.5 rounded-xl font-bold text-black transition disabled:opacity-40"
                 style={{ background: 'linear-gradient(180deg,#C09020,#8B6914,#C09020)', border: '2px solid #FFD700' }}
@@ -123,12 +124,12 @@ export default function PurchaseModal({ onClose }) {
               Registra tu solicitud y realiza el pago. Te enviaremos un código de canje una vez confirmado.
             </p>
             <div className="flex gap-3">
-              <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-gray-400 text-sm transition"
+              <button onClick={() => { playSound('click'); onClose(); }} className="flex-1 py-2.5 rounded-xl text-gray-400 text-sm transition"
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 Cancelar
               </button>
               <button
-                onClick={handleRequest}
+                onClick={() => { playSound('click'); handleRequest(); }}
                 disabled={loading}
                 className="flex-1 py-2.5 rounded-xl font-bold text-white transition disabled:opacity-40"
                 style={{ background: '#16A34A', border: '1px solid #15803D' }}
@@ -140,7 +141,7 @@ export default function PurchaseModal({ onClose }) {
         )}
 
         {success && (
-          <button onClick={onClose} className="w-full mt-3 py-2 rounded-xl text-yellow-400 text-sm font-bold transition"
+          <button onClick={() => { playSound('click'); onClose(); }} className="w-full mt-3 py-2 rounded-xl text-yellow-400 text-sm font-bold transition"
             style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)' }}>
             Cerrar
           </button>

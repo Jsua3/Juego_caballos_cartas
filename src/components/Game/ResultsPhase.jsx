@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 
 const SUITS = [
   { id: 'oros',    name: 'Oros',    emoji: '🪙', color: '#FFD700', glow: '#FFD70060' },
@@ -11,6 +12,7 @@ const SUITS = [
 function getSuit(id) { return SUITS.find((s) => s.id === id); }
 
 function Confetti() {
+
   const particles = Array.from({ length: 30 }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
@@ -33,13 +35,6 @@ function Confetti() {
       ))}
     </div>
   );
-}
-
-function playSound(type) {
-  try {
-    const audio = new Audio(`${process.env.PUBLIC_URL}/sounds/${type}.mp3`);
-    audio.play().catch(() => {});
-  } catch (_) {}
 }
 
 export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeaveLobby }) {
@@ -142,14 +137,14 @@ export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeave
         {/* Actions */}
         <div className="flex gap-3">
           <button
-            onClick={onLeaveLobby}
+            onClick={() => { playSound('click'); onLeaveLobby(); }}
             className="flex-1 py-3 rounded-xl font-bold text-gray-300 transition"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
             Ir al Lobby
           </button>
           <button
-            onClick={onPlayAgain}
+            onClick={() => { playSound('click'); onPlayAgain(); }}
             className="flex-1 py-3 rounded-xl font-bold text-black transition"
             style={{
               background: 'linear-gradient(180deg, #C09020 0%, #8B6914 50%, #C09020 100%)',

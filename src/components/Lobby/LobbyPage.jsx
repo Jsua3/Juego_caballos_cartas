@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 
 export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
   const { token } = useAuth();
@@ -58,7 +59,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <button
-            onClick={createRoom}
+                  onClick={() => { playSound('click'); createRoom(); }}
             disabled={creating}
             className="flex-1 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition"
           >
@@ -74,7 +75,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
               className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
             />
             <button
-              onClick={joinByCode}
+              onClick={() => { playSound('click'); joinByCode(); }}
               className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded-xl transition"
             >
               Unirse
@@ -102,7 +103,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
               <div
                 key={room.id}
                 className="bg-gray-900 border border-gray-700 hover:border-yellow-600/50 rounded-xl p-4 flex items-center justify-between transition cursor-pointer"
-                onClick={() => onJoinRoom(room.room_code)}
+                onClick={() => { playSound('click'); onJoinRoom(room.room_code); }}
               >
                 <div>
                   <div className="flex items-center gap-2">
