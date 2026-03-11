@@ -25,7 +25,10 @@ export default function RegisterPage({ onSwitch }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className="min-h-screen flex items-center justify-center" style={{
+      backgroundImage: `linear-gradient(rgba(4,10,4,0.85), rgba(4,10,4,0.85)), url(${process.env.PUBLIC_URL}/background.jpg)`,
+      backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
+    }}>
       <div className="bg-gray-900 border border-yellow-600/30 rounded-2xl p-8 w-full max-w-md shadow-2xl">
         <h1 className="text-3xl font-bold text-yellow-400 text-center mb-2">🏇 Carrera de Caballos</h1>
         <p className="text-gray-400 text-center mb-6">Crea tu cuenta — ¡recibes 1000 puntos gratis!</p>
