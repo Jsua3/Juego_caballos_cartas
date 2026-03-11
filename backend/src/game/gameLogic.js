@@ -24,24 +24,14 @@ function shuffleDeck(deck) {
 }
 
 /**
- * Deal the 4 track cards (one per suit) face-down.
+ * Deal TRACK_LENGTH (7) penalty cards face-down, one per column.
+ * Suits can repeat. Cards are taken from the top of the shuffled deck.
  * Returns { trackCards, remainingDeck }
- * trackCards[i] = the suit that will penalise at position i (1-indexed, 4 cards total)
+ * trackCards[i] = the suit that will penalise at column i+1
  */
 function dealTrackCards(deck) {
-  // Take 4 cards (one of each suit) from the shuffled deck for the track
-  const trackCards = [];
-  const used = new Set();
-  const remainingDeck = [];
-
-  for (const card of deck) {
-    if (!used.has(card.suit) && trackCards.length < 4) {
-      used.add(card.suit);
-      trackCards.push(card.suit); // penalises this suit
-    } else {
-      remainingDeck.push(card);
-    }
-  }
+  const trackCards = deck.slice(0, TRACK_LENGTH).map((c) => c.suit);
+  const remainingDeck = deck.slice(TRACK_LENGTH);
   return { trackCards, remainingDeck };
 }
 

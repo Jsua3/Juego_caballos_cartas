@@ -16,14 +16,14 @@ export default function UserBar({ onPurchase }) {
           <span className="text-yellow-400 text-sm font-bold">{user.points?.toLocaleString()}</span>
           <span className="text-yellow-600 text-xs">pts</span>
         </div>
-        {user.points < 50 && (
-          <button
-            onClick={onPurchase}
-            className="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
-          >
-            + Comprar puntos
-          </button>
-        )}
+        <button
+          onClick={onPurchase}
+          title="Comprar o canjear puntos"
+          className="flex items-center gap-1 bg-green-700/80 hover:bg-green-600 border border-green-500/40 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition"
+        >
+          <span>+</span>
+          <span className="hidden sm:inline">Puntos</span>
+        </button>
         <button
           onClick={logout}
           className="text-gray-400 hover:text-white text-xs transition"

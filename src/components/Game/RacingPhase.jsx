@@ -186,74 +186,29 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
           </div>
         )}
 
-        {/* Track — penalty cards (se revelan cuando todos los caballos pasan esa columna) */}
-        {trackCards && trackCards.length > 0 && (
-          <div className="rounded-xl border border-yellow-600/20 bg-black/50 p-3 mb-4">
-            <p className="text-yellow-700 text-xs text-center mb-2" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
-              CARTAS DE PENALIZACIÓN
-            </p>
-            <div className="flex justify-center gap-3">
-              {trackCards.map((suit, i) => {
-                // Autoridad del servidor: carta i revelada si revealedCount > i
-                const revealed = revealedCount > i;
-                const triggerPos = i + 1;
-                return (
-                  <div key={i} className="flex flex-col items-center gap-1">
-                    <div style={{ transition: 'all 0.4s', transform: revealed ? 'rotateY(0deg)' : 'rotateY(0deg)' }}>
-                      {revealed ? (
-                        <div style={{ position: 'relative' }}>
-                          <CasinoCard suitId={suit} small />
-                          {/* Brillo al revelar */}
-                          <div style={{
-                            position: 'absolute', inset: 0, borderRadius: 6,
-                            boxShadow: `0 0 14px ${getSuit(suit)?.glow ?? '#FFD70060'}`,
-                            pointerEvents: 'none',
-                          }} />
-                        </div>
-                      ) : (
-                        <CasinoCard faceDown small />
-                      )}
-                    </div>
-                    <span className="text-xs" style={{ color: revealed ? getSuit(suit)?.color : '#4B5563' }}>
-                      col {triggerPos}
-                    </span>
-                    {revealed && (
-                      <span className="text-xs font-bold" style={{ color: getSuit(suit)?.color }}>
-                        ⚠️ {getSuit(suit)?.name}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-gray-600 text-xs text-center mt-2">
-              Cuando todos pasen una columna, se revela qué palo retrocede
-            </p>
-          </div>
-        )}
-
-        {/* Race track */}
+        {/* Race track + penalty cards alineadas abajo */}
         <div className="rounded-2xl border border-yellow-600/20 bg-black/60 backdrop-blur p-4 mb-4">
+          {/* Carriles */}
           {SUITS.map((suit) => {
             const pos = positions[suit.id] ?? 0;
             const pct = Math.min((pos / TRACK_LENGTH) * 100, 100);
             return (
-              <div key={suit.id} className="mb-3 last:mb-0">
-                <div className="flex items-center gap-2 mb-1">
+              <div key={suit.id} className="mb-2 last:mb-0">
+                <div className="flex items-center gap-2">
                   <span className="text-lg w-7 text-center">{suit.emoji}</span>
                   <div className="flex-1 relative rounded-full overflow-hidden" style={{
-                    height: 52,
+                    height: 50,
                     background: 'linear-gradient(90deg, rgba(22,101,52,0.15) 0%, rgba(22,101,52,0.25) 50%, rgba(22,101,52,0.15) 100%)',
                     border: '1px solid rgba(184,134,11,0.15)',
                   }}>
-                    {/* Track grid lines */}
+                    {/* Grid lines — una por columna */}
                     {Array.from({ length: TRACK_LENGTH }).map((_, i) => (
                       <div key={i} className="absolute top-0 bottom-0 border-r border-dashed border-yellow-900/30"
                         style={{ left: `${((i + 1) / TRACK_LENGTH) * 100}%` }} />
                     ))}
-                    {/* Finish line */}
+                    {/* Línea de meta */}
                     <div className="absolute top-0 bottom-0 right-0 w-1" style={{ background: 'linear-gradient(180deg, #FFD700, #B8860B)' }} />
-                    {/* Horse */}
+                    {/* Caballo */}
                     <div className="absolute top-1/2 -translate-y-1/2 transition-all duration-500"
                       style={{ left: `calc(${pct}% - 20px)` }}>
                       <HorseMarker suitId={suit.id} isWinner={pos >= TRACK_LENGTH} />
@@ -264,6 +219,42 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
               </div>
             );
           })}
+
+          {/* Cartas penalizadoras — alineadas con las columnas del track */}
+          {trackCards && trackCards.length > 0 && (
+            <div className="mt-3">
+              <p className="text-yellow-800 text-xs text-center mb-1" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
+                PENALIZACIONES
+              </p>
+              {/* Contenedor alineado con el track (mismo ancho que las barras) */}
+              <div className="flex items-end" style={{ paddingLeft: '2.25rem', paddingRight: '2.5rem' }}>
+                {trackCards.map((suit, i) => {
+                  const revealed = revealedCount > i;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                      {revealed ? (
+                        <div style={{ position: 'relative' }}>
+                          <CasinoCard suitId={suit} small />
+                          <div style={{
+                            position: 'absolute', inset: 0, borderRadius: 6,
+                            boxShadow: `0 0 14px ${getSuit(suit)?.glow ?? '#FFD70060'}`,
+                            pointerEvents: 'none',
+                          }} />
+                        </div>
+                      ) : (
+                        <CasinoCard faceDown small />
+                      )}
+                      {revealed && (
+                        <span className="text-xs font-bold" style={{ color: getSuit(suit)?.color, fontSize: 9 }}>
+                          ⚠️ {getSuit(suit)?.name}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Current card drawn */}
