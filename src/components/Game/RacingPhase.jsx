@@ -90,35 +90,39 @@ const TRACK_GRID = '1.75rem 1fr 2rem';
 const TRACK_GAP  = '0.5rem';
 
 export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players, chatMessages = [], onSendMessage }) {
-  const logRef = useRef(null);
-  const chatEndRef = useRef(null);
+  const logRef        = useRef(null);
+  const chatEndRef    = useRef(null);   // mobile tab chat
+  const sidebarEndRef = useRef(null);   // desktop sidebar chat
   const [log, setLog] = useState([]);
-  const [activeTab, setActiveTab] = useState('eventos');
-  const [unreadChat, setUnreadChat] = useState(0);
+  const [activeTab, setActiveTab] = useState('eventos'); // mobile only
+  const [unreadChat, setUnreadChat] = useState(0);       // mobile only
   const [chatInput, setChatInput] = useState('');
 
+  // Log events
   useEffect(() => {
     if (currentCard) {
       const suit = getSuit(currentCard.suit);
       if (penaltySuit) {
         playSound('retreat');
-        const msg = `🃏 ${suit?.name} avanza ⚠️ ${getSuit(penaltySuit)?.name} retrocede`;
-        setLog((prev) => [...prev.slice(-60), { msg, id: Date.now() }]);
+        setLog((prev) => [...prev.slice(-60), { msg: `🃏 ${suit?.name} avanza ⚠️ ${getSuit(penaltySuit)?.name} retrocede`, id: Date.now() }]);
       } else {
         playSound('advance');
-        const msg = `🃏 ${suit?.name} ${suit?.symbol} → avanza`;
-        setLog((prev) => [...prev.slice(-60), { msg, id: Date.now() }]);
+        setLog((prev) => [...prev.slice(-60), { msg: `🃏 ${suit?.name} ${suit?.symbol} → avanza`, id: Date.now() }]);
       }
     }
   }, [currentCard, penaltySuit]);
 
+  // Auto-scroll events log
   useEffect(() => {
-    if (activeTab === 'eventos' && logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
-  }, [log, activeTab]);
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [log]);
 
-  // Track unread chat messages when in Eventos tab
+  // Auto-scroll desktop sidebar on new messages
+  useEffect(() => {
+    sidebarEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // Unread dot for mobile tab
   const prevChatLen = useRef(chatMessages.length);
   useEffect(() => {
     if (chatMessages.length > prevChatLen.current && activeTab === 'eventos') {
@@ -144,8 +148,46 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
   const bettingPlayers = players?.filter((p) => p.betSuit) ?? [];
   const { user } = useAuth();
 
+  // Shared chat messages list (used in both mobile tab and desktop sidebar)
+  const ChatMessages = ({ endRef }) => (
+    <>
+      {chatMessages.length === 0 && (
+        <p className="text-gray-600 text-xs text-center mt-4">Nadie ha escrito aún…</p>
+      )}
+      {chatMessages.map((m, i) => (
+        <p key={i} className="text-xs leading-5 break-words">
+          <span className="font-bold" style={{ color: m.userId === user?.id ? '#FFD700' : '#94A3B8' }}>
+            {m.username}:
+          </span>{' '}
+          <span className="text-gray-300">{m.message}</span>
+        </p>
+      ))}
+      <div ref={endRef} />
+    </>
+  );
+
+  const ChatInput = () => (
+    <div className="flex gap-2 p-2 border-t border-gray-700/40 shrink-0">
+      <input
+        type="text"
+        value={chatInput}
+        onChange={(e) => setChatInput(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+        maxLength={200}
+        placeholder="Escribe un mensaje…"
+        className="flex-1 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-yellow-600/50"
+      />
+      <button
+        onClick={() => { playSound('click'); sendChat(); }}
+        className="bg-yellow-700/60 hover:bg-yellow-600/80 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shrink-0"
+      >
+        Enviar
+      </button>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen pt-16 px-2 pb-6" style={{
+    <div className="min-h-screen pt-16 pb-6" style={{
       backgroundImage: `linear-gradient(rgba(4,10,4,0.85), rgba(4,10,4,0.85)), url(${process.env.PUBLIC_URL}/background.jpg)`,
       backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
       fontFamily: "'Georgia', serif",
@@ -158,252 +200,238 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
         .col-reveal { animation: col-reveal 0.35s ease-out forwards; }
       `}</style>
 
-      {/* Contenedor ancho para que el tablero se vea bien */}
-      <div className="max-w-4xl mx-auto mt-4 px-2">
+      {/* ── Outer wrapper: flex row on lg+ ── */}
+      <div className="flex gap-4 items-start mt-4 px-2 mx-auto" style={{ maxWidth: '1400px' }}>
 
-        {/* Title */}
-        <div className="text-center mb-4">
-          <h2 style={{
-            background: 'linear-gradient(135deg, #FFD700, #B8860B, #FFD700)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            fontFamily: "'Cinzel', serif", fontSize: 26, fontWeight: 900,
-          }}>
-            ¡EN CARRERA!
-          </h2>
-        </div>
+        {/* ── LEFT: game content ── */}
+        <div className="flex-1 min-w-0">
+          <div className="max-w-4xl mx-auto lg:mx-0">
 
-        {/* Players */}
-        {bettingPlayers.length > 0 && (
-          <div className="rounded-xl border border-yellow-600/20 bg-black/50 p-3 mb-4">
-            <p className="text-yellow-700 text-xs text-center mb-3" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
-              JUGADORES
-            </p>
-            <div className="flex justify-center gap-4 flex-wrap">
-              {bettingPlayers.map((p) => {
-                const suit = getSuit(p.betSuit);
-                const isWinning = (positions[p.betSuit] ?? 0) === Math.max(...Object.values(positions));
-                const isMe = p.userId === user?.id;
-                return (
-                  <div key={p.userId} className="flex flex-col items-center gap-1.5">
-                    <div style={{ animation: isWinning ? 'card-bounce 1s ease-in-out infinite' : 'none' }}>
-                      <CasinoCard suitId={p.betSuit} small />
-                    </div>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                      style={{
-                        background: `${suit?.color}25`,
-                        border: `2px solid ${isMe ? '#FFD700' : suit?.color}`,
-                        color: isMe ? '#FFD700' : suit?.color,
-                        boxShadow: isMe ? '0 0 10px rgba(255,215,0,0.4)' : 'none',
-                      }}>
-                      {p.username.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs font-bold" style={{ color: isMe ? '#FFD700' : '#D1D5DB' }}>
-                        {p.username}{isMe ? ' (tú)' : ''}
-                      </p>
-                      <p className="text-xs" style={{ color: suit?.color }}>
-                        {suit?.emoji} {p.betAmount?.toLocaleString()}pts
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Title */}
+            <div className="text-center mb-4">
+              <h2 style={{
+                background: 'linear-gradient(135deg, #FFD700, #B8860B, #FFD700)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                fontFamily: "'Cinzel', serif", fontSize: 26, fontWeight: 900,
+              }}>
+                ¡EN CARRERA!
+              </h2>
             </div>
-          </div>
-        )}
 
-        {/* ── Track principal + cartas penalizadoras ── */}
-        <div className="rounded-2xl border border-yellow-600/20 bg-black/60 backdrop-blur p-4 mb-4">
-
-          {/* Carriles */}
-          {SUITS.map((suit) => {
-            const pos = positions[suit.id] ?? 0;
-            const pct = Math.min((pos / TRACK_LENGTH) * 100, 100);
-            return (
-              <div key={suit.id} className="mb-2 last:mb-0"
-                style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP, alignItems: 'center' }}>
-                <span className="text-xl text-center">{suit.emoji}</span>
-                <div className="relative rounded-lg overflow-hidden" style={{
-                  height: 58,
-                  background: 'linear-gradient(90deg, rgba(22,101,52,0.15) 0%, rgba(22,101,52,0.25) 50%, rgba(22,101,52,0.15) 100%)',
-                  border: '1px solid rgba(184,134,11,0.15)',
-                }}>
-                  {/* Grid lines de columnas */}
-                  {Array.from({ length: TRACK_LENGTH }).map((_, i) => (
-                    <div key={i} className="absolute top-0 bottom-0 border-r border-dashed"
-                      style={{
-                        left: `${((i + 1) / TRACK_LENGTH) * 100}%`,
-                        borderColor: i === TRACK_LENGTH - 1 ? '#B8860B' : 'rgba(184,134,11,0.25)',
-                        borderWidth: i === TRACK_LENGTH - 1 ? 2 : 1,
-                        borderStyle: i === TRACK_LENGTH - 1 ? 'solid' : 'dashed',
-                      }} />
-                  ))}
-                  {/* Caballo */}
-                  <div className="absolute top-1/2 -translate-y-1/2 transition-all duration-500"
-                    style={{ left: `calc(${pct}% - 22px)` }}>
-                    <HorseMarker suitId={suit.id} isWinner={pos >= TRACK_LENGTH} />
-                  </div>
-                </div>
-                <span className="text-yellow-400 text-sm font-bold text-right">{pos}</span>
-              </div>
-            );
-          })}
-
-          {/* ── Cartas penalizadoras alineadas con las columnas ── */}
-          {trackCards && trackCards.length > 0 && (
-            <div className="mt-4">
-              {/* Label */}
-              <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP }}>
-                <div />
-                <p className="text-yellow-700 text-xs text-center mb-1" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
-                  CARTAS PENALIZADORAS
+            {/* Players */}
+            {bettingPlayers.length > 0 && (
+              <div className="rounded-xl border border-yellow-600/20 bg-black/50 p-3 mb-4">
+                <p className="text-yellow-700 text-xs text-center mb-3" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
+                  JUGADORES
                 </p>
-                <div />
-              </div>
-
-              {/* Números de columna */}
-              <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP }}>
-                <div />
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TRACK_LENGTH}, 1fr)` }}>
-                  {trackCards.map((_, i) => (
-                    <div key={i} className="flex justify-center">
-                      <span className="text-xs font-bold" style={{ color: 'rgba(184,134,11,0.5)', fontFamily: "'Cinzel', serif" }}>
-                        {i + 1}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div />
-              </div>
-
-              {/* Líneas verticales conectoras (de la barra al número) */}
-              <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP, marginBottom: 4 }}>
-                <div />
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TRACK_LENGTH}, 1fr)` }}>
-                  {trackCards.map((_, i) => (
-                    <div key={i} className="flex justify-center">
-                      <div style={{ width: 1, height: 8, background: 'rgba(184,134,11,0.3)' }} />
-                    </div>
-                  ))}
-                </div>
-                <div />
-              </div>
-
-              {/* Cartas */}
-              <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP }}>
-                <div />
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TRACK_LENGTH}, 1fr)`, gap: 2 }}>
-                  {trackCards.map((suit, i) => {
-                    const revealed = revealedCount > i;
+                <div className="flex justify-center gap-4 flex-wrap">
+                  {bettingPlayers.map((p) => {
+                    const suit = getSuit(p.betSuit);
+                    const isWinning = (positions[p.betSuit] ?? 0) === Math.max(...Object.values(positions));
+                    const isMe = p.userId === user?.id;
                     return (
-                      <div key={i} className="flex flex-col items-center gap-0.5">
-                        {revealed ? (
-                          <div className="col-reveal" style={{ position: 'relative' }}>
-                            <CasinoCard suitId={suit} small />
-                            <div style={{
-                              position: 'absolute', inset: 0, borderRadius: 6,
-                              boxShadow: `0 0 16px ${getSuit(suit)?.glow ?? '#FFD70060'}`,
-                              pointerEvents: 'none',
-                            }} />
-                          </div>
-                        ) : (
-                          <CasinoCard faceDown small />
-                        )}
-                        {revealed && (
-                          <span style={{ color: getSuit(suit)?.color, fontSize: 9, fontWeight: 700, textAlign: 'center' }}>
-                            ⚠️{getSuit(suit)?.name}
-                          </span>
-                        )}
+                      <div key={p.userId} className="flex flex-col items-center gap-1.5">
+                        <div style={{ animation: isWinning ? 'card-bounce 1s ease-in-out infinite' : 'none' }}>
+                          <CasinoCard suitId={p.betSuit} small />
+                        </div>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{
+                            background: `${suit?.color}25`,
+                            border: `2px solid ${isMe ? '#FFD700' : suit?.color}`,
+                            color: isMe ? '#FFD700' : suit?.color,
+                            boxShadow: isMe ? '0 0 10px rgba(255,215,0,0.4)' : 'none',
+                          }}>
+                          {p.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-bold" style={{ color: isMe ? '#FFD700' : '#D1D5DB' }}>
+                            {p.username}{isMe ? ' (tú)' : ''}
+                          </p>
+                          <p className="text-xs" style={{ color: suit?.color }}>
+                            {suit?.emoji} {p.betAmount?.toLocaleString()}pts
+                          </p>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-                <div />
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Última carta */}
-        <div className="flex items-center gap-4 rounded-xl border border-yellow-600/20 bg-black/50 p-4 mb-4">
-          <div>
-            <p className="text-gray-400 text-xs mb-1" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>ÚLTIMA CARTA</p>
-            {currentCard ? <CasinoCard suitId={currentCard.suit} /> : <CasinoCard faceDown />}
-          </div>
-          {currentCard && (
-            <div>
-              <p className="text-white font-bold">{getSuit(currentCard.suit)?.name}</p>
-              <p className="text-gray-400 text-sm">{getSuit(currentCard.suit)?.emoji} avanza</p>
-              {penaltySuit && (
-                <p className="text-red-400 text-sm mt-1">⚠️ {getSuit(penaltySuit)?.name} retrocede</p>
+            {/* ── Track principal + cartas penalizadoras ── */}
+            <div className="rounded-2xl border border-yellow-600/20 bg-black/60 backdrop-blur p-4 mb-4">
+              {SUITS.map((suit) => {
+                const pos = positions[suit.id] ?? 0;
+                const pct = Math.min((pos / TRACK_LENGTH) * 100, 100);
+                return (
+                  <div key={suit.id} className="mb-2 last:mb-0"
+                    style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP, alignItems: 'center' }}>
+                    <span className="text-xl text-center">{suit.emoji}</span>
+                    <div className="relative rounded-lg overflow-hidden" style={{
+                      height: 58,
+                      background: 'linear-gradient(90deg, rgba(22,101,52,0.15) 0%, rgba(22,101,52,0.25) 50%, rgba(22,101,52,0.15) 100%)',
+                      border: '1px solid rgba(184,134,11,0.15)',
+                    }}>
+                      {Array.from({ length: TRACK_LENGTH }).map((_, i) => (
+                        <div key={i} className="absolute top-0 bottom-0 border-r border-dashed"
+                          style={{
+                            left: `${((i + 1) / TRACK_LENGTH) * 100}%`,
+                            borderColor: i === TRACK_LENGTH - 1 ? '#B8860B' : 'rgba(184,134,11,0.25)',
+                            borderWidth: i === TRACK_LENGTH - 1 ? 2 : 1,
+                            borderStyle: i === TRACK_LENGTH - 1 ? 'solid' : 'dashed',
+                          }} />
+                      ))}
+                      <div className="absolute top-1/2 -translate-y-1/2 transition-all duration-500"
+                        style={{ left: `calc(${pct}% - 22px)` }}>
+                        <HorseMarker suitId={suit.id} isWinner={pos >= TRACK_LENGTH} />
+                      </div>
+                    </div>
+                    <span className="text-yellow-400 text-sm font-bold text-right">{pos}</span>
+                  </div>
+                );
+              })}
+
+              {trackCards && trackCards.length > 0 && (
+                <div className="mt-4">
+                  <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP }}>
+                    <div />
+                    <p className="text-yellow-700 text-xs text-center mb-1" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
+                      CARTAS PENALIZADORAS
+                    </p>
+                    <div />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP }}>
+                    <div />
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TRACK_LENGTH}, 1fr)` }}>
+                      {trackCards.map((_, i) => (
+                        <div key={i} className="flex justify-center">
+                          <span className="text-xs font-bold" style={{ color: 'rgba(184,134,11,0.5)', fontFamily: "'Cinzel', serif" }}>{i + 1}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP, marginBottom: 4 }}>
+                    <div />
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TRACK_LENGTH}, 1fr)` }}>
+                      {trackCards.map((_, i) => (
+                        <div key={i} className="flex justify-center">
+                          <div style={{ width: 1, height: 8, background: 'rgba(184,134,11,0.3)' }} />
+                        </div>
+                      ))}
+                    </div>
+                    <div />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: TRACK_GRID, gap: TRACK_GAP }}>
+                    <div />
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${TRACK_LENGTH}, 1fr)`, gap: 2 }}>
+                      {trackCards.map((suit, i) => {
+                        const revealed = revealedCount > i;
+                        return (
+                          <div key={i} className="flex flex-col items-center gap-0.5">
+                            {revealed ? (
+                              <div className="col-reveal" style={{ position: 'relative' }}>
+                                <CasinoCard suitId={suit} small />
+                                <div style={{ position: 'absolute', inset: 0, borderRadius: 6, boxShadow: `0 0 16px ${getSuit(suit)?.glow ?? '#FFD70060'}`, pointerEvents: 'none' }} />
+                              </div>
+                            ) : (
+                              <CasinoCard faceDown small />
+                            )}
+                            {revealed && (
+                              <span style={{ color: getSuit(suit)?.color, fontSize: 9, fontWeight: 700, textAlign: 'center' }}>
+                                ⚠️{getSuit(suit)?.name}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div />
+                  </div>
+                </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* Log / Chat tabs */}
-        <div className="rounded-xl border border-gray-800 bg-black/40 overflow-hidden">
-          {/* Tab bar */}
-          <div className="flex border-b border-gray-700/50">
-            <button
-              onClick={() => { playSound('click'); setActiveTab('eventos'); }}
-              className={`flex-1 py-1.5 text-xs font-bold transition ${activeTab === 'eventos' ? 'text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300'}`}
-            >
-              Eventos
-            </button>
-            <button
-              onClick={() => { playSound('click'); setActiveTab('chat'); }}
-              className={`flex-1 py-1.5 text-xs font-bold transition relative ${activeTab === 'chat' ? 'text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300'}`}
-            >
-              Chat
-              {unreadChat > 0 && activeTab !== 'chat' && (
-                <span className="absolute top-1 right-6 w-2 h-2 rounded-full bg-red-500" />
-              )}
-            </button>
-          </div>
-
-          {/* Content */}
-          {activeTab === 'eventos' ? (
-            <div ref={logRef} className="h-28 overflow-y-auto p-3 space-y-0.5">
-              {log.map((entry) => (
-                <p key={entry.id} className="text-gray-400 text-xs leading-5">{entry.msg}</p>
-              ))}
-              {log.length === 0 && <p className="text-gray-600 text-xs text-center mt-4">Esperando cartas…</p>}
-            </div>
-          ) : (
-            <div className="flex flex-col" style={{ height: '7rem' }}>
-              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-0">
-                {chatMessages.length === 0 && (
-                  <p className="text-gray-600 text-xs text-center mt-3">Nadie ha escrito aún…</p>
-                )}
-                {chatMessages.map((m, i) => (
-                  <p key={i} className="text-xs leading-5">
-                    <span className="font-bold" style={{ color: '#94A3B8' }}>{m.username}:</span>{' '}
-                    <span className="text-gray-300">{m.message}</span>
-                  </p>
-                ))}
-                <div ref={chatEndRef} />
+            {/* Última carta */}
+            <div className="flex items-center gap-4 rounded-xl border border-yellow-600/20 bg-black/50 p-4 mb-4">
+              <div>
+                <p className="text-gray-400 text-xs mb-1" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>ÚLTIMA CARTA</p>
+                {currentCard ? <CasinoCard suitId={currentCard.suit} /> : <CasinoCard faceDown />}
               </div>
-              <div className="flex gap-2 px-2 pb-2 pt-1 border-t border-gray-700/40">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendChat()}
-                  maxLength={200}
-                  placeholder="Escribe…"
-                  className="flex-1 bg-gray-800/60 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-yellow-600/50"
-                />
+              {currentCard && (
+                <div>
+                  <p className="text-white font-bold">{getSuit(currentCard.suit)?.name}</p>
+                  <p className="text-gray-400 text-sm">{getSuit(currentCard.suit)?.emoji} avanza</p>
+                  {penaltySuit && <p className="text-red-400 text-sm mt-1">⚠️ {getSuit(penaltySuit)?.name} retrocede</p>}
+                </div>
+              )}
+            </div>
+
+            {/* ── Eventos log (always) + Chat tab MOBILE only ── */}
+            <div className="rounded-xl border border-gray-800 bg-black/40 overflow-hidden">
+              {/* Tab bar — mobile only */}
+              <div className="flex border-b border-gray-700/50 lg:hidden">
                 <button
-                  onClick={() => { playSound('click'); sendChat(); }}
-                  className="bg-yellow-700/60 hover:bg-yellow-600/80 text-white text-xs font-bold px-2 py-1 rounded-lg transition"
+                  onClick={() => { playSound('click'); setActiveTab('eventos'); }}
+                  className={`flex-1 py-1.5 text-xs font-bold transition ${activeTab === 'eventos' ? 'text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  Enviar
+                  Eventos
+                </button>
+                <button
+                  onClick={() => { playSound('click'); setActiveTab('chat'); }}
+                  className={`flex-1 py-1.5 text-xs font-bold transition relative ${activeTab === 'chat' ? 'text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  Chat
+                  {unreadChat > 0 && activeTab !== 'chat' && (
+                    <span className="absolute top-1 right-6 w-2 h-2 rounded-full bg-red-500" />
+                  )}
                 </button>
               </div>
+
+              {/* Eventos content */}
+              <div
+                ref={logRef}
+                className={`h-28 overflow-y-auto p-3 space-y-0.5 ${activeTab !== 'eventos' ? 'hidden lg:block' : ''}`}
+              >
+                {log.map((entry) => (
+                  <p key={entry.id} className="text-gray-400 text-xs leading-5">{entry.msg}</p>
+                ))}
+                {log.length === 0 && <p className="text-gray-600 text-xs text-center mt-4">Esperando cartas…</p>}
+              </div>
+
+              {/* Chat — mobile tab only */}
+              <div className={`lg:hidden flex flex-col ${activeTab !== 'chat' ? 'hidden' : ''}`} style={{ height: '7rem' }}>
+                <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-0">
+                  <ChatMessages endRef={chatEndRef} />
+                </div>
+                <ChatInput />
+              </div>
             </div>
-          )}
+
+          </div>
         </div>
+
+        {/* ── RIGHT: Chat sidebar — desktop only ── */}
+        <div
+          className="hidden lg:flex flex-col shrink-0 rounded-xl border border-yellow-600/20 bg-black/60 overflow-hidden"
+          style={{ width: 260, position: 'sticky', top: '4.5rem', height: 'calc(100vh - 5.5rem)' }}
+        >
+          {/* Header */}
+          <div className="px-3 py-2.5 border-b border-yellow-600/15 shrink-0">
+            <p className="text-yellow-700 text-xs font-bold text-center" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
+              CHAT
+            </p>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5 min-h-0">
+            <ChatMessages endRef={sidebarEndRef} />
+          </div>
+
+          {/* Input */}
+          <ChatInput />
+        </div>
+
       </div>
     </div>
   );
