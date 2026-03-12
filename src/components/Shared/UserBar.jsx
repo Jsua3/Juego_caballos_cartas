@@ -1,7 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
 
-export default function UserBar({ onPurchase }) {
+export default function UserBar({ onPurchase, onStats }) {
   const { user, logout } = useAuth();
 
   if (!user) return null;
@@ -17,6 +17,14 @@ export default function UserBar({ onPurchase }) {
           <span className="text-yellow-400 text-sm font-bold">{user.points?.toLocaleString()}</span>
           <span className="text-yellow-600 text-xs">pts</span>
         </div>
+        <button
+          onClick={() => { playSound('click'); onStats?.(); }}
+          title="Ver estadísticas"
+          className="flex items-center gap-1 bg-blue-700/80 hover:bg-blue-600 border border-blue-500/40 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition"
+        >
+          <span>📊</span>
+          <span className="hidden sm:inline">Stats</span>
+        </button>
         <button
           onClick={() => { playSound('click'); onPurchase(); }}
           title="Comprar o canjear puntos"

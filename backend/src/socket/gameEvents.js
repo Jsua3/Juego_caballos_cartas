@@ -359,6 +359,21 @@ module.exports = function registerGameEvents(io) {
       }
     });
 
+    // ── send_message ─────────────────────────────────────────────────────────
+    socket.on('send_message', ({ message }) => {
+      const room = getRoomBySocket(socket.id);
+      const player = room?.players.find((p) => p.socketId === socket.id);
+      if (!room || !player) return;
+      const msg = message?.trim().slice(0, 200);
+      if (!msg) return;
+      io.to(room.roomCode).emit('message_received', {
+        userId:    player.userId,
+        username:  player.username,
+        message:   msg,
+        timestamp: Date.now(),
+      });
+    });
+
     // ── disconnect ───────────────────────────────────────────────────────────
     socket.on('disconnect', () => {
       console.log('Socket disconnected:', socket.id);

@@ -3,6 +3,40 @@ import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
 
+function MiniStats({ token }) {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/api/users/stats`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => setStats(res.data))
+      .catch(() => {});
+  }, [token]);
+
+  if (!stats) return null;
+
+  return (
+    <div className="flex items-center gap-4 bg-black/40 border border-yellow-600/15 rounded-xl px-4 py-2 mb-5 flex-wrap">
+      <span className="text-yellow-700 text-xs font-bold" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 1 }}>
+        TUS STATS
+      </span>
+      <MiniStat label="Jugadas" value={stats.games_played} />
+      <MiniStat label="Ganadas" value={stats.games_won} color="#22C55E" />
+      <MiniStat label="Victoria" value={`${stats.win_rate}%`} color={stats.win_rate >= 50 ? '#22C55E' : '#EF4444'} />
+      <MiniStat label="Pts ganados" value={stats.points_won.toLocaleString()} color="#FFD700" />
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color = '#D1D5DB' }) {
+  return (
+    <div className="flex flex-col items-center">
+      <span className="font-bold text-sm" style={{ color }}>{value}</span>
+      <span className="text-gray-600 text-xs">{label}</span>
+    </div>
+  );
+}
+
 export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
   const { token } = useAuth();
   const [rooms, setRooms] = useState([]);
@@ -57,7 +91,8 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
       backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
     }}>
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-yellow-400 mb-6 mt-4">Salas disponibles</h2>
+        <h2 className="text-2xl font-bold text-yellow-400 mb-4 mt-4">Salas disponibles</h2>
+        <MiniStats token={token} />
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">

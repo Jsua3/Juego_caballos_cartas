@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
 
@@ -89,9 +89,13 @@ function CasinoCard({ suitId, faceDown = false, small = false }) {
 const TRACK_GRID = '1.75rem 1fr 2rem';
 const TRACK_GAP  = '0.5rem';
 
-export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players }) {
+export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players, chatMessages = [], onSendMessage }) {
   const logRef = useRef(null);
+  const chatEndRef = useRef(null);
   const [log, setLog] = useState([]);
+  const [activeTab, setActiveTab] = useState('eventos');
+  const [unreadChat, setUnreadChat] = useState(0);
+  const [chatInput, setChatInput] = useState('');
 
   useEffect(() => {
     if (currentCard) {
@@ -109,8 +113,33 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
   }, [currentCard, penaltySuit]);
 
   useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [log]);
+    if (activeTab === 'eventos' && logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [log, activeTab]);
+
+  // Track unread chat messages when in Eventos tab
+  const prevChatLen = useRef(chatMessages.length);
+  useEffect(() => {
+    if (chatMessages.length > prevChatLen.current && activeTab === 'eventos') {
+      setUnreadChat((n) => n + (chatMessages.length - prevChatLen.current));
+    }
+    prevChatLen.current = chatMessages.length;
+  }, [chatMessages, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      setUnreadChat(0);
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [activeTab, chatMessages]);
+
+  const sendChat = useCallback(() => {
+    const text = chatInput.trim();
+    if (!text) return;
+    onSendMessage?.(text);
+    setChatInput('');
+  }, [chatInput, onSendMessage]);
 
   const bettingPlayers = players?.filter((p) => p.betSuit) ?? [];
   const { user } = useAuth();
@@ -312,12 +341,68 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
           )}
         </div>
 
-        {/* Log */}
-        <div ref={logRef} className="rounded-xl border border-gray-800 bg-black/40 p-3 h-28 overflow-y-auto">
-          {log.map((entry) => (
-            <p key={entry.id} className="text-gray-400 text-xs leading-5">{entry.msg}</p>
-          ))}
-          {log.length === 0 && <p className="text-gray-600 text-xs text-center mt-4">Esperando cartas…</p>}
+        {/* Log / Chat tabs */}
+        <div className="rounded-xl border border-gray-800 bg-black/40 overflow-hidden">
+          {/* Tab bar */}
+          <div className="flex border-b border-gray-700/50">
+            <button
+              onClick={() => { playSound('click'); setActiveTab('eventos'); }}
+              className={`flex-1 py-1.5 text-xs font-bold transition ${activeTab === 'eventos' ? 'text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              Eventos
+            </button>
+            <button
+              onClick={() => { playSound('click'); setActiveTab('chat'); }}
+              className={`flex-1 py-1.5 text-xs font-bold transition relative ${activeTab === 'chat' ? 'text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              Chat
+              {unreadChat > 0 && activeTab !== 'chat' && (
+                <span className="absolute top-1 right-6 w-2 h-2 rounded-full bg-red-500" />
+              )}
+            </button>
+          </div>
+
+          {/* Content */}
+          {activeTab === 'eventos' ? (
+            <div ref={logRef} className="h-28 overflow-y-auto p-3 space-y-0.5">
+              {log.map((entry) => (
+                <p key={entry.id} className="text-gray-400 text-xs leading-5">{entry.msg}</p>
+              ))}
+              {log.length === 0 && <p className="text-gray-600 text-xs text-center mt-4">Esperando cartas…</p>}
+            </div>
+          ) : (
+            <div className="flex flex-col" style={{ height: '7rem' }}>
+              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-0">
+                {chatMessages.length === 0 && (
+                  <p className="text-gray-600 text-xs text-center mt-3">Nadie ha escrito aún…</p>
+                )}
+                {chatMessages.map((m, i) => (
+                  <p key={i} className="text-xs leading-5">
+                    <span className="font-bold" style={{ color: '#94A3B8' }}>{m.username}:</span>{' '}
+                    <span className="text-gray-300">{m.message}</span>
+                  </p>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="flex gap-2 px-2 pb-2 pt-1 border-t border-gray-700/40">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+                  maxLength={200}
+                  placeholder="Escribe…"
+                  className="flex-1 bg-gray-800/60 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-yellow-600/50"
+                />
+                <button
+                  onClick={() => { playSound('click'); sendChat(); }}
+                  className="bg-yellow-700/60 hover:bg-yellow-600/80 text-white text-xs font-bold px-2 py-1 rounded-lg transition"
+                >
+                  Enviar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

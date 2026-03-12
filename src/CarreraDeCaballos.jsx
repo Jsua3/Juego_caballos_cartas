@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import { playSound } from './utils/sound';
 import socket from './socket';
@@ -8,6 +8,7 @@ import RacingPhase from './components/Game/RacingPhase';
 import ResultsPhase from './components/Game/ResultsPhase';
 import UserBar from './components/Shared/UserBar';
 import PurchaseModal from './components/Shared/PurchaseModal';
+import StatsModal from './components/Shared/StatsModal';
 
 /*
  * App phases:
@@ -35,6 +36,8 @@ export default function CarreraDeCaballos() {
   const [results, setResults] = useState(null);
   const [winnerSuit, setWinnerSuit] = useState(null);
   const [showPurchase, setShowPurchase] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
   const [socketError, setSocketError] = useState('');
   const [notification, setNotification] = useState('');
 
@@ -116,6 +119,8 @@ export default function CarreraDeCaballos() {
       setTimeout(() => setNotification(''), 4000);
     };
 
+    const onMessageReceived = (msg) => setChatMessages((prev) => [...prev.slice(-199), msg]);
+
     const onOnlineUsers = (list) => setOnlinePlayers(list);
 
     const onRaceCancelled = ({ message }) => {
@@ -124,6 +129,7 @@ export default function CarreraDeCaballos() {
       setTimeout(() => setSocketError(''), 5000);
     };
 
+    socket.on('message_received', onMessageReceived);
     socket.on('room_updated', onRoomUpdated);
     socket.on('betting_start', onBettingStart);
     socket.on('bet_confirmed', onBetConfirmed);
@@ -136,6 +142,7 @@ export default function CarreraDeCaballos() {
     socket.on('online_users', onOnlineUsers);
 
     return () => {
+      socket.off('message_received', onMessageReceived);
       socket.off('room_updated', onRoomUpdated);
       socket.off('betting_start', onBettingStart);
       socket.off('bet_confirmed', onBetConfirmed);
@@ -169,7 +176,12 @@ export default function CarreraDeCaballos() {
     setRoomState({ players: [], status: 'waiting', ownerId: null });
     setResults(null);
     setWinnerSuit(null);
+    setChatMessages([]);
   }, [roomCode]);
+
+  const handleSendMessage = useCallback((text) => {
+    socket.emit('send_message', { message: text });
+  }, []);
 
   const handleStartBetting = useCallback(() => {
     socket.emit('start_betting', { roomCode });
@@ -191,7 +203,7 @@ export default function CarreraDeCaballos() {
 
   return (
     <>
-      <UserBar onPurchase={() => setShowPurchase(true)} />
+      <UserBar onPurchase={() => setShowPurchase(true)} onStats={() => setShowStats(true)} />
 
       {/* Socket error toast */}
       {socketError && (
@@ -219,6 +231,8 @@ export default function CarreraDeCaballos() {
           isOwner={isOwner}
           onStartBetting={handleStartBetting}
           onLeave={handleLeaveRoom}
+          chatMessages={chatMessages}
+          onSendMessage={handleSendMessage}
         />
       )}
 
@@ -237,6 +251,8 @@ export default function CarreraDeCaballos() {
           trackCards={raceState.trackCards}
           revealedCount={raceState.revealedCount}
           players={roomState.players}
+          chatMessages={chatMessages}
+          onSendMessage={handleSendMessage}
         />
       )}
 
@@ -250,15 +266,29 @@ export default function CarreraDeCaballos() {
       )}
 
       {showPurchase && <PurchaseModal onClose={() => setShowPurchase(false)} />}
+      {showStats && <StatsModal onClose={() => setShowStats(false)} />}
     </>
   );
 }
 
 /* ── Waiting Room ── */
-function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave }) {
+function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, chatMessages = [], onSendMessage }) {
   const { players = [], status } = roomState;
   const { user } = useAuth();
   const canStart = players.length >= 2 && status === 'waiting';
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const sendChat = () => {
+    const text = chatInput.trim();
+    if (!text) return;
+    onSendMessage?.(text);
+    setChatInput('');
+  };
 
   return (
     <div className="min-h-screen pt-16 px-4 pb-8 flex flex-col items-center" style={{
@@ -359,6 +389,46 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave }) 
               Esperando al dueño…
             </div>
           )}
+        </div>
+
+        {/* Chat */}
+        <div className="mt-4 rounded-xl border border-gray-700/50 bg-black/40 overflow-hidden">
+          <div className="px-3 py-2 border-b border-gray-700/40">
+            <span className="text-gray-400 text-xs font-bold" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 1 }}>
+              CHAT
+            </span>
+          </div>
+          <div className="h-32 overflow-y-auto px-3 py-2 space-y-1">
+            {chatMessages.length === 0 && (
+              <p className="text-gray-600 text-xs text-center mt-4">Nadie ha escrito aún…</p>
+            )}
+            {chatMessages.map((m, i) => (
+              <p key={i} className="text-xs leading-5">
+                <span className="font-bold" style={{ color: m.userId === user?.id ? '#FFD700' : '#94A3B8' }}>
+                  {m.username}:
+                </span>{' '}
+                <span className="text-gray-300">{m.message}</span>
+              </p>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="flex gap-2 p-2 border-t border-gray-700/40">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+              maxLength={200}
+              placeholder="Escribe un mensaje…"
+              className="flex-1 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-yellow-600/50"
+            />
+            <button
+              onClick={() => { playSound('click'); sendChat(); }}
+              className="bg-yellow-700/60 hover:bg-yellow-600/80 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+            >
+              Enviar
+            </button>
+          </div>
         </div>
       </div>
     </div>
