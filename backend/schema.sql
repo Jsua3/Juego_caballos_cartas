@@ -15,9 +15,13 @@ CREATE TABLE IF NOT EXISTS game_rooms (
   room_code   VARCHAR(8) UNIQUE NOT NULL,
   status      VARCHAR(20) DEFAULT 'waiting',
   max_players INT DEFAULT 4,
+  game_mode   VARCHAR(20) NOT NULL DEFAULT 'caballos',
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   finished_at TIMESTAMP NULL DEFAULT NULL
 );
+
+-- Migration (run if table already exists):
+-- ALTER TABLE game_rooms ADD COLUMN game_mode VARCHAR(20) NOT NULL DEFAULT 'caballos';
 
 CREATE TABLE IF NOT EXISTS room_players (
   id            INT AUTO_INCREMENT PRIMARY KEY,

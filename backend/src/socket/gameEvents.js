@@ -8,6 +8,7 @@ const {
   checkWinner,
   SUITS,
 } = require('../game/gameLogic');
+const { registerBlackjackEvents, startBlackjackBetting } = require('./blackjackEvents');
 
 /**
  * In-memory room state. Key = roomCode.
@@ -45,6 +46,7 @@ function broadcastRoom(io, room) {
     })),
     status:               room.status,
     ownerId:              room.ownerId,
+    gameMode:             room.gameMode || 'caballos',
     bettingCurrentUserId: room.bettingOrder?.[room.currentBetIdx] ?? null,
   });
 }
@@ -174,6 +176,7 @@ async function startBetting(io, room) {
 }
 
 module.exports = function registerGameEvents(io) {
+  registerBlackjackEvents(io, rooms);
   io.on('connection', (socket) => {
     console.log('Socket connected:', socket.id);
 
@@ -216,6 +219,7 @@ module.exports = function registerGameEvents(io) {
             roomCode,
             dbRoomId:      dbRoom.id,
             status:        dbRoom.status === 'finished' ? 'waiting' : dbRoom.status,
+            gameMode:      dbRoom.game_mode || 'caballos',
             players:       [],
             ownerId:       null,
             deck:          null,
@@ -298,6 +302,9 @@ module.exports = function registerGameEvents(io) {
       if (room.status !== 'waiting')  return socket.emit('error', { message: 'Cannot start now' });
       if (room.players.length < 2)    return socket.emit('error', { message: 'Need at least 2 players' });
 
+      if (room.gameMode === 'blackjack') {
+        return startBlackjackBetting(io, room);
+      }
       await startBetting(io, room);
     });
 

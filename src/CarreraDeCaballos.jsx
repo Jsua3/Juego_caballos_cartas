@@ -9,6 +9,7 @@ import ResultsPhase from './components/Game/ResultsPhase';
 import UserBar from './components/Shared/UserBar';
 import PurchaseModal from './components/Shared/PurchaseModal';
 import StatsModal from './components/Shared/StatsModal';
+import BlackjackGame from './components/Blackjack/BlackjackGame';
 
 /*
  * App phases:
@@ -23,6 +24,8 @@ export default function CarreraDeCaballos() {
   const { token, user, updatePoints } = useAuth();
 
   const [phase, setPhase] = useState('lobby');
+  const [gameMode, setGameMode] = useState('caballos');
+  const [bjData, setBjData] = useState(null);
   const [roomCode, setRoomCode] = useState(null);
   const [onlinePlayers, setOnlinePlayers] = useState([]);
   const [roomState, setRoomState] = useState({ players: [], status: 'waiting', ownerId: null });
@@ -54,10 +57,18 @@ export default function CarreraDeCaballos() {
 
   // Socket event listeners
   useEffect(() => {
-    const onRoomUpdated = ({ players, status, ownerId, bettingCurrentUserId }) => {
+    const onRoomUpdated = ({ players, status, ownerId, bettingCurrentUserId, gameMode: gm }) => {
       setRoomState((prev) => ({ ...prev, players, status, ownerId, bettingCurrentUserId }));
-      if (status === 'waiting') setPhase('waiting');
-      if (status === 'betting') setPhase('betting');
+      if (gm) setGameMode(gm);
+      // Only drive phase from room_updated for caballos; BJ uses bj_* events
+      const mode = gm || 'caballos';
+      if (mode === 'caballos') {
+        if (status === 'waiting') setPhase('waiting');
+        if (status === 'betting') setPhase('betting');
+      } else {
+        // For BJ, only go back to waiting if explicitly reset
+        if (status === 'waiting') setPhase('waiting');
+      }
     };
 
     const onBettingStart = ({ currentUserId }) => {
@@ -129,6 +140,82 @@ export default function CarreraDeCaballos() {
       setTimeout(() => setSocketError(''), 5000);
     };
 
+    // ── Blackjack events ──────────────────────────────────────────────────────
+    const onBjBettingPhase = ({ timeLimit }) => {
+      setBjData({ phase: 'betting', timeLimit, players: [], betsPlaced: [] });
+      setPhase('blackjack');
+    };
+
+    const onBjBetPlaced = ({ userId, username, betsPlaced, totalPlayers }) => {
+      setBjData((prev) => prev ? { ...prev, betsPlaced } : prev);
+    };
+
+    const onBjDeal = (data) => {
+      setBjData((prev) => ({
+        ...prev,
+        ...data,
+        phase: 'playing',
+        currentTurn: null,
+      }));
+    };
+
+    const onBjYourTurn = (data) => {
+      setBjData((prev) => prev ? { ...prev, currentTurn: data } : prev);
+    };
+
+    const onBjCardDealt = (data) => {
+      setBjData((prev) => {
+        if (!prev) return prev;
+        const newPlayers = (prev.players || []).map((p) => {
+          if (p.userId !== data.userId) return p;
+          const newHands = p.hands.map((h, i) =>
+            i === data.handIndex
+              ? { ...h, cards: [...h.cards, data.card], done: data.done, outcome: data.outcome,
+                  bet: data.newBet ?? h.bet }
+              : h
+          );
+          return { ...p, hands: newHands, points: data.playerPoints ?? p.points };
+        });
+        return { ...prev, players: newPlayers, currentTurn: null };
+      });
+    };
+
+    const onBjStand = ({ userId, handIndex }) => {
+      setBjData((prev) => {
+        if (!prev) return prev;
+        const newPlayers = (prev.players || []).map((p) => {
+          if (p.userId !== userId) return p;
+          const newHands = p.hands.map((h, i) => i === handIndex ? { ...h, done: true } : h);
+          return { ...p, hands: newHands };
+        });
+        return { ...prev, players: newPlayers, currentTurn: null };
+      });
+    };
+
+    const onBjSplitDone = ({ userId, hands, playerPoints }) => {
+      setBjData((prev) => {
+        if (!prev) return prev;
+        const newPlayers = (prev.players || []).map((p) =>
+          p.userId === userId ? { ...p, hands, points: playerPoints } : p
+        );
+        return { ...prev, players: newPlayers, currentTurn: null };
+      });
+    };
+
+    const onBjDealerReveal = ({ dealer }) => {
+      setBjData((prev) => prev ? { ...prev, dealer, phase: 'dealer_turn' } : prev);
+    };
+
+    const onBjDealerCard = ({ card, value, cards }) => {
+      setBjData((prev) => prev ? { ...prev, dealer: { ...prev.dealer, cards, value } } : prev);
+    };
+
+    const onBjRoundResult = (data) => {
+      setBjData((prev) => prev ? { ...prev, ...data, phase: 'results' } : prev);
+      const myResult = data.results?.find((r) => r.userId === user?.id);
+      if (myResult) updatePoints(myResult.pointsAfter);
+    };
+
     socket.on('message_received', onMessageReceived);
     socket.on('room_updated', onRoomUpdated);
     socket.on('betting_start', onBettingStart);
@@ -140,6 +227,16 @@ export default function CarreraDeCaballos() {
     socket.on('player_left', onPlayerLeft);
     socket.on('race_cancelled', onRaceCancelled);
     socket.on('online_users', onOnlineUsers);
+    socket.on('bj_betting_phase', onBjBettingPhase);
+    socket.on('bj_bet_placed', onBjBetPlaced);
+    socket.on('bj_deal', onBjDeal);
+    socket.on('bj_your_turn', onBjYourTurn);
+    socket.on('bj_card_dealt', onBjCardDealt);
+    socket.on('bj_stand', onBjStand);
+    socket.on('bj_split_done', onBjSplitDone);
+    socket.on('bj_dealer_reveal', onBjDealerReveal);
+    socket.on('bj_dealer_card', onBjDealerCard);
+    socket.on('bj_round_result', onBjRoundResult);
 
     return () => {
       socket.off('message_received', onMessageReceived);
@@ -153,6 +250,16 @@ export default function CarreraDeCaballos() {
       socket.off('player_left', onPlayerLeft);
       socket.off('race_cancelled', onRaceCancelled);
       socket.off('online_users', onOnlineUsers);
+      socket.off('bj_betting_phase', onBjBettingPhase);
+      socket.off('bj_bet_placed', onBjBetPlaced);
+      socket.off('bj_deal', onBjDeal);
+      socket.off('bj_your_turn', onBjYourTurn);
+      socket.off('bj_card_dealt', onBjCardDealt);
+      socket.off('bj_stand', onBjStand);
+      socket.off('bj_split_done', onBjSplitDone);
+      socket.off('bj_dealer_reveal', onBjDealerReveal);
+      socket.off('bj_dealer_card', onBjDealerCard);
+      socket.off('bj_round_result', onBjRoundResult);
     };
   }, [user, updatePoints]);
 
@@ -173,10 +280,12 @@ export default function CarreraDeCaballos() {
     if (roomCode) socket.emit('leave_room', { roomCode });
     setRoomCode(null);
     setPhase('lobby');
+    setGameMode('caballos');
     setRoomState({ players: [], status: 'waiting', ownerId: null });
     setResults(null);
     setWinnerSuit(null);
     setChatMessages([]);
+    setBjData(null);
   }, [roomCode]);
 
   const handleSendMessage = useCallback((text) => {
@@ -198,6 +307,14 @@ export default function CarreraDeCaballos() {
     setPhase('waiting');
     socket.emit('join_room', { roomCode, token });
   }, [roomCode, token]);
+
+  const handleBjAction = useCallback((action, handIndex) => {
+    socket.emit('bj_action', { action, handIndex });
+  }, []);
+
+  const handleBjPlaceBet = useCallback((amount) => {
+    socket.emit('bj_place_bet', { amount });
+  }, []);
 
   const isOwner = roomState.ownerId === user?.id;
 
@@ -262,6 +379,18 @@ export default function CarreraDeCaballos() {
           winnerSuit={winnerSuit}
           onPlayAgain={handlePlayAgain}
           onLeaveLobby={handleLeaveRoom}
+        />
+      )}
+
+      {phase === 'blackjack' && (
+        <BlackjackGame
+          bjData={bjData}
+          onAction={handleBjAction}
+          onPlaceBet={handleBjPlaceBet}
+          chatMessages={chatMessages}
+          onSendMessage={handleSendMessage}
+          onLeave={handleLeaveRoom}
+          players={roomState.players}
         />
       )}
 

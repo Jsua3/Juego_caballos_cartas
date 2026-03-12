@@ -44,6 +44,8 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
   const [creating, setCreating] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
+  const [showModeModal, setShowModeModal] = useState(false);
+  const [selectedMode, setSelectedMode] = useState('caballos');
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -64,11 +66,12 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
     return () => clearInterval(interval);
   }, [fetchRooms]);
 
-  const createRoom = async () => {
+  const createRoom = async (gameMode) => {
     setCreating(true);
     setError('');
+    setShowModeModal(false);
     try {
-      const res = await axios.post(`${API_URL}/api/rooms`, {}, {
+      const res = await axios.post(`${API_URL}/api/rooms`, { gameMode }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       onJoinRoom(res.data.room_code);
@@ -97,7 +100,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <button
-                  onClick={() => { playSound('click'); createRoom(); }}
+            onClick={() => { playSound('click'); setShowModeModal(true); }}
             disabled={creating}
             className="flex-1 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition"
           >
@@ -144,10 +147,17 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
                 onClick={() => { playSound('click'); onJoinRoom(room.room_code); }}
               >
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono font-bold text-yellow-400 text-lg">{room.room_code}</span>
                     <span className="text-xs bg-green-900/40 text-green-400 border border-green-700/40 px-2 py-0.5 rounded-full">
                       Esperando
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                      room.game_mode === 'blackjack'
+                        ? 'bg-blue-900/40 text-blue-300 border-blue-700/40'
+                        : 'bg-yellow-900/30 text-yellow-500 border-yellow-700/30'
+                    }`}>
+                      {room.game_mode === 'blackjack' ? '🃏 Blackjack' : '🏇 Caballos'}
                     </span>
                   </div>
                   <p className="text-gray-400 text-sm mt-0.5">
@@ -162,6 +172,65 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
           </div>
         )}
       </div>
+
+      {/* Mode selector modal */}
+      {showModeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="bg-gray-900 border border-yellow-600/30 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-center text-yellow-400 font-bold text-lg mb-5"
+              style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
+              MODO DE JUEGO
+            </h3>
+
+            <div className="space-y-3 mb-6">
+              {[
+                { id: 'caballos', emoji: '🏇', label: 'Carrera de Caballos', desc: 'Apuesta al palo ganador' },
+                { id: 'blackjack', emoji: '🃏', label: 'Blackjack', desc: 'Vence al dealer con 21' },
+              ].map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => setSelectedMode(mode.id)}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl border transition"
+                  style={{
+                    background: selectedMode === mode.id ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
+                    border: `2px solid ${selectedMode === mode.id ? '#FFD700' : 'rgba(255,255,255,0.1)'}`,
+                  }}
+                >
+                  <span className="text-3xl">{mode.emoji}</span>
+                  <div className="text-left">
+                    <p className="text-white font-bold text-sm">{mode.label}</p>
+                    <p className="text-gray-400 text-xs">{mode.desc}</p>
+                  </div>
+                  {selectedMode === mode.id && (
+                    <span className="ml-auto text-yellow-400 text-lg">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowModeModal(false)}
+                className="flex-1 py-2.5 rounded-xl text-gray-400 text-sm font-medium transition"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { playSound('click'); createRoom(selectedMode); }}
+                className="flex-1 py-2.5 rounded-xl font-bold text-black text-sm transition"
+                style={{
+                  background: 'linear-gradient(180deg, #C09020 0%, #8B6914 50%, #C09020 100%)',
+                  border: '2px solid #FFD700',
+                  fontFamily: "'Cinzel', serif",
+                }}
+              >
+                CREAR SALA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Jugadores en línea — barra inferior fija */}
       <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-green-600/20 px-4 py-2 z-40">

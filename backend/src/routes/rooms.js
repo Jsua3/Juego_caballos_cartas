@@ -17,7 +17,7 @@ function generateRoomCode() {
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT gr.id, gr.room_code, gr.status, gr.max_players, gr.created_at,
+      SELECT gr.id, gr.room_code, gr.status, gr.max_players, gr.game_mode, gr.created_at,
              COUNT(rp.id) AS player_count
       FROM game_rooms gr
       LEFT JOIN room_players rp ON rp.room_id = gr.id
@@ -37,6 +37,10 @@ router.get('/', authMiddleware, async (req, res) => {
 // POST /api/rooms — crear nueva sala
 router.post('/', authMiddleware, async (req, res) => {
   try {
+    const { gameMode = 'caballos' } = req.body;
+    if (!['caballos', 'blackjack'].includes(gameMode)) {
+      return res.status(400).json({ error: 'Invalid game mode' });
+    }
     let roomCode;
     let attempts = 0;
     while (attempts < 10) {
@@ -46,8 +50,8 @@ router.post('/', authMiddleware, async (req, res) => {
       attempts++;
     }
     const [result] = await pool.query(
-      `INSERT INTO game_rooms (room_code) VALUES (?)`,
-      [roomCode]
+      `INSERT INTO game_rooms (room_code, game_mode) VALUES (?, ?)`,
+      [roomCode, gameMode]
     );
     const [rows] = await pool.query('SELECT * FROM game_rooms WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
