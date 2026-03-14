@@ -14,7 +14,7 @@ function AppRouter() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="text-yellow-400 text-2xl font-bold animate-pulse" style={{ fontFamily: "'Cinzel', serif" }}>
-          🏇 Cargando…
+          🎰 Cargando…
         </div>
       </div>
     );

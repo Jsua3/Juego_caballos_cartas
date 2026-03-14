@@ -1,6 +1,12 @@
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function RoomCodeQR({ roomCode, onClose }) {
+  const joinUrl =
+    window.location.origin +
+    window.location.pathname +
+    '?room=' +
+    roomCode;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm px-4"
@@ -18,7 +24,7 @@ export default function RoomCodeQR({ roomCode, onClose }) {
         </p>
 
         <div className="bg-white p-3 rounded-xl">
-          <QRCodeSVG value={roomCode} size={180} />
+          <QRCodeSVG value={joinUrl} size={180} />
         </div>
 
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-6 py-2">

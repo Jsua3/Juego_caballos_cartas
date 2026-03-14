@@ -278,6 +278,17 @@ export default function CarreraDeCaballos() {
     socket.emit('join_room', { roomCode: code, token });
   }, [token]);
 
+  // Auto-join via URL param ?room=CODE (from QR scan)
+  useEffect(() => {
+    if (!token) return;
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      window.history.replaceState({}, '', window.location.pathname);
+      handleJoinRoom(roomParam.toUpperCase());
+    }
+  }, [token, handleJoinRoom]);
+
   const handleLeaveRoom = useCallback(() => {
     if (roomCode) socket.emit('leave_room', { roomCode });
     setRoomCode(null);
