@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BlackjackCard from './BlackjackCard';
 import { useAuth } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 
 const OUTCOME_STYLE = {
   win:       { label: 'WIN',       bg: '#065F46', color: '#34D399', border: '#10B981', glow: 'rgba(52,211,153,0.35)' },
@@ -23,10 +24,10 @@ const itemVariants = {
 
 export default function BlackjackResults({ results = [], dealerCards = [], dealerValue, onLeave }) {
   const { user } = useAuth();
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
-    setCountdown(5);
+    setCountdown(10);
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) { clearInterval(timer); return 0; }
@@ -178,7 +179,7 @@ export default function BlackjackResults({ results = [], dealerCards = [], deale
           </motion.p>
         </AnimatePresence>
         <motion.button
-          onClick={onLeave}
+          onClick={() => { playSound('click'); onLeave(); }}
           whileHover={{ scale: 1.04, boxShadow: '0 0 18px rgba(255,255,255,0.1)' }}
           whileTap={{ scale: 0.96 }}
           transition={{ type: 'spring', stiffness: 380, damping: 20 }}

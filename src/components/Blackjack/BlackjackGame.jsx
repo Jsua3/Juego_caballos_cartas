@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 import BlackjackBetting from './BlackjackBetting';
 import BlackjackTable from './BlackjackTable';
 import BlackjackActions from './BlackjackActions';
@@ -28,6 +29,7 @@ export default function BlackjackGame({
   const sendChat = () => {
     const text = chatInput.trim();
     if (!text) return;
+    playSound('click');
     onSendMessage?.(text);
     setChatInput('');
   };
@@ -73,7 +75,7 @@ export default function BlackjackGame({
               </motion.button>
             )}
             <motion.button
-              onClick={onLeave}
+              onClick={() => { playSound('click'); onLeave(); }}
               whileHover={{ scale: 1.04, color: '#e5e7eb' }}
               whileTap={{ scale: 0.95 }}
               className="text-gray-500 text-sm px-3 py-1 rounded-lg"

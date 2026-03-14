@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { playSound } from '../../utils/sound';
 
 const QUICK_CHIPS = [50, 100, 200, 500];
 const RADIUS = 45;
@@ -35,6 +36,7 @@ export default function BlackjackBetting({ timeLimit, players, betsPlaced = [], 
   const handleBet = () => {
     if (hasBet || !canBet) return;
     const amount = Math.max(50, Math.min(betAmount, myPoints));
+    playSound('click');
     onPlaceBet(amount);
     setHasBet(true);
   };
@@ -102,7 +104,7 @@ export default function BlackjackBetting({ timeLimit, players, betsPlaced = [], 
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.06, type: 'spring', stiffness: 400, damping: 20 }}
-                onClick={() => !unavailable && setBetAmount(Math.min(chip, myPoints))}
+                onClick={() => { if (!unavailable) { playSound('click'); setBetAmount(Math.min(chip, myPoints)); } }}
                 disabled={unavailable}
                 whileHover={unavailable ? {} : { scale: 1.12, boxShadow: isSelected ? '0 0 22px rgba(255,215,0,0.6)' : '0 0 14px rgba(255,215,0,0.3)' }}
                 whileTap={unavailable ? {} : { scale: 0.9 }}

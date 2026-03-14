@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { playSound } from '../../utils/sound';
 
 const ACTIONS = [
   { id: 'hit',    label: 'HIT',    bg: '#1E3A8A', border: '#3B82F6', glow: 'rgba(59,130,246,0.5)',  emoji: '👊' },
@@ -15,7 +16,7 @@ export default function BlackjackActions({ availableActions = [], disabled = fal
         return (
           <motion.button
             key={id}
-            onClick={() => !disabled && onAction(id)}
+            onClick={() => { if (!disabled) { playSound('click'); onAction(id); } }}
             disabled={disabled}
             whileHover={disabled ? {} : {
               scale: 1.08,

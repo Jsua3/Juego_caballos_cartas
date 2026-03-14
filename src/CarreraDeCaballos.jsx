@@ -177,6 +177,7 @@ export default function CarreraDeCaballos() {
     };
 
     const onBjCardDealt = (data) => {
+      playSound('advance');
       setBjData((prev) => {
         if (!prev) return prev;
         const newPlayers = (prev.players || []).map((p) => {
@@ -194,6 +195,7 @@ export default function CarreraDeCaballos() {
     };
 
     const onBjStand = ({ userId, handIndex }) => {
+      playSound('advance');
       setBjData((prev) => {
         if (!prev) return prev;
         const newPlayers = (prev.players || []).map((p) => {
@@ -206,6 +208,7 @@ export default function CarreraDeCaballos() {
     };
 
     const onBjSplitDone = ({ userId, hands, playerPoints }) => {
+      playSound('advance');
       setBjData((prev) => {
         if (!prev) return prev;
         const newPlayers = (prev.players || []).map((p) =>

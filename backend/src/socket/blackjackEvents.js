@@ -330,7 +330,7 @@ async function resolveRound(io, room) {
   setTimeout(() => {
     if (!_rooms || !_rooms.has(room.roomCode)) return;
     startNewRound(io, room);
-  }, 5000);
+  }, 10000);
 }
 
 // ── startNewRound ─────────────────────────────────────────────────────────────
