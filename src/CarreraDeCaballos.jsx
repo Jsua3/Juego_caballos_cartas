@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 import { playSound } from './utils/sound';
 import socket from './socket';
@@ -453,13 +454,15 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
           </p>
           <div className="inline-flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-6 py-3">
             <span className="font-mono font-black text-yellow-400 text-3xl tracking-widest">{roomCode}</span>
-            <button
+            <motion.button
               onClick={onShowQR}
               title="Ver código QR"
-              className="text-yellow-400 hover:text-yellow-300 text-xl transition"
+              whileHover={{ scale: 1.2, color: '#FFD700', filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.6))' }}
+              whileTap={{ scale: 0.9 }}
+              className="text-yellow-500 text-xl"
             >
               ▣
-            </button>
+            </motion.button>
           </div>
           <p className="text-gray-500 text-xs mt-2">Comparte este código con tus amigos</p>
         </div>
@@ -469,25 +472,36 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
           <h3 className="text-yellow-600 text-xs font-bold mb-3" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
             JUGADORES ({players.length}/4)
           </h3>
-          <div className="space-y-2">
-            {players.map((p, i) => {
+          <motion.div
+            className="space-y-2"
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+          >
+            {players.map((p) => {
               const isMe = p.userId === user?.id;
               return (
-              <div key={p.userId} className="flex items-center gap-3 p-2 rounded-lg transition" style={{
-                background: isMe ? 'rgba(255,215,0,0.06)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${isMe ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
-              }}>
-                {/* Avatar con número */}
+              <motion.div
+                key={p.userId}
+                variants={{
+                  hidden: { opacity: 0, x: -12 },
+                  show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+                }}
+                className="flex items-center gap-3 p-2 rounded-lg"
+                style={{
+                  background: isMe ? 'rgba(255,215,0,0.06)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isMe ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                  boxShadow: isMe ? '0 0 16px rgba(255,215,0,0.08)' : 'none',
+                }}
+              >
                 <div className="relative">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
                     style={{ background: 'rgba(184,134,11,0.15)', border: `2px solid ${isMe ? '#FFD700' : 'rgba(184,134,11,0.3)'}`, color: '#FFD700' }}>
                     {p.username.charAt(0).toUpperCase()}
                   </div>
-                  {/* Punto verde online */}
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-900"
                     style={{ background: '#22C55E', boxShadow: '0 0 6px #22C55E' }} />
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="text-white text-sm font-medium truncate">{p.username}</p>
@@ -495,51 +509,62 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
                   </div>
                   <p className="text-gray-500 text-xs">{p.points?.toLocaleString()} pts</p>
                 </div>
-
                 <div className="flex items-center gap-2">
-                  {roomState.ownerId === p.userId && (
-                    <span className="text-yellow-400 text-xs">👑</span>
-                  )}
+                  {roomState.ownerId === p.userId && <span className="text-yellow-400 text-xs">👑</span>}
                   <span className="text-green-400 text-xs font-medium">● En línea</span>
                 </div>
-              </div>
+              </motion.div>
               );
             })}
             {Array.from({ length: 4 - players.length }).map((_, i) => (
-              <div key={`empty-${i}`} className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-gray-800">
+              <motion.div
+                key={`empty-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: players.length * 0.08 + i * 0.06 }}
+                className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-gray-800/60"
+              >
                 <div className="w-9 h-9 rounded-full border border-dashed border-gray-700 flex items-center justify-center">
                   <span className="text-gray-700 text-xs">?</span>
                 </div>
                 <div>
                   <p className="text-gray-700 text-sm italic">Esperando jugador…</p>
-                  <p className="text-gray-800 text-xs">● Desconectado</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
 
         <div className="flex gap-3">
-          <button
+          <motion.button
             onClick={() => { playSound('click'); onLeave(); }}
-            className="flex-1 py-3 rounded-xl font-medium text-gray-400 transition"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="flex-1 py-3 rounded-xl font-medium text-gray-400"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
             Salir
-          </button>
+          </motion.button>
           {isOwner && (
-            <button
+            <motion.button
               onClick={() => { playSound('click'); onStartBetting(); }}
               disabled={!canStart}
-              className="flex-1 py-3 rounded-xl font-bold text-black transition disabled:opacity-30 disabled:cursor-not-allowed"
+              whileHover={canStart ? {
+                scale: 1.04,
+                boxShadow: '0 0 36px rgba(255,215,0,0.55), 0 4px 20px rgba(0,0,0,0.5)',
+              } : {}}
+              whileTap={canStart ? { scale: 0.97 } : {}}
+              transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+              className="flex-1 py-3 rounded-xl font-bold text-black disabled:opacity-30 disabled:cursor-not-allowed"
               style={{
                 background: 'linear-gradient(180deg, #C09020 0%, #8B6914 50%, #C09020 100%)',
                 border: '2px solid #FFD700',
                 fontFamily: "'Cinzel', serif",
+                boxShadow: canStart ? '0 0 18px rgba(192,144,32,0.35)' : 'none',
               }}
             >
-              {canStart ? 'INICIAR JUEGO' : `Mínimo 2 jugadores`}
-            </button>
+              {canStart ? 'INICIAR JUEGO' : 'Mínimo 2 jugadores'}
+            </motion.button>
           )}
           {!isOwner && (
             <div className="flex-1 py-3 rounded-xl text-center text-gray-500 text-sm" style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>

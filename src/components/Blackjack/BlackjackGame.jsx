@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import BlackjackBetting from './BlackjackBetting';
 import BlackjackTable from './BlackjackTable';
@@ -59,23 +60,27 @@ export default function BlackjackGame({
           </h1>
           <div className="flex items-center gap-2">
             {roomCode && (
-              <button
+              <motion.button
                 onClick={onShowQR}
                 title="Ver código QR de sala"
-                className="flex items-center gap-1 text-yellow-500 hover:text-yellow-300 text-xs font-bold transition px-2.5 py-1 rounded-lg"
+                whileHover={{ scale: 1.06, boxShadow: '0 0 16px rgba(255,215,0,0.35)' }}
+                whileTap={{ scale: 0.94 }}
+                className="flex items-center gap-1 text-yellow-500 text-xs font-bold px-2.5 py-1 rounded-lg"
                 style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)' }}
               >
                 <span>▣</span>
                 <span className="hidden sm:inline font-mono">{roomCode}</span>
-              </button>
+              </motion.button>
             )}
-            <button
+            <motion.button
               onClick={onLeave}
-              className="text-gray-500 hover:text-gray-300 text-sm transition px-3 py-1 rounded-lg"
+              whileHover={{ scale: 1.04, color: '#e5e7eb' }}
+              whileTap={{ scale: 0.95 }}
+              className="text-gray-500 text-sm px-3 py-1 rounded-lg"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
             >
               Salir
-            </button>
+            </motion.button>
           </div>
         </div>
 

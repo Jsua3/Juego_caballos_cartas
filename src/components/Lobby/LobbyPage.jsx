@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
@@ -99,13 +100,22 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <button
+          <motion.button
             onClick={() => { playSound('click'); setShowModeModal(true); }}
             disabled={creating}
-            className="flex-1 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition"
+            whileHover={!creating ? { scale: 1.03, boxShadow: '0 0 28px rgba(255,215,0,0.45)' } : {}}
+            whileTap={!creating ? { scale: 0.97 } : {}}
+            transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+            className="flex-1 disabled:opacity-50 text-black font-bold py-3 rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, #C09020, #FFD700, #C09020)',
+              boxShadow: '0 0 16px rgba(192,144,32,0.3)',
+              fontFamily: "'Cinzel', serif",
+              letterSpacing: 1,
+            }}
           >
             {creating ? 'Creando...' : '+ Crear nueva sala'}
-          </button>
+          </motion.button>
           <div className="flex flex-1 gap-2">
             <input
               type="text"
@@ -113,14 +123,21 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               maxLength={8}
               placeholder="Código de sala"
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+              className="flex-1 bg-gray-800/80 border border-gray-700 rounded-xl px-4 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500/60 transition"
             />
-            <button
+            <motion.button
               onClick={() => { playSound('click'); joinByCode(); }}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded-xl transition"
+              whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(59,130,246,0.45)' }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+              className="text-white font-bold px-4 rounded-xl"
+              style={{
+                background: 'linear-gradient(135deg, #1E40AF, #2563EB)',
+                boxShadow: '0 0 10px rgba(37,99,235,0.3)',
+              }}
             >
               Unirse
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -134,21 +151,47 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
         {loading ? (
           <div className="text-gray-400 text-center py-12">Cargando salas...</div>
         ) : rooms.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">🎪</div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16"
+          >
+            <div className="text-5xl mb-4">🎰</div>
             <p className="text-gray-400">No hay salas disponibles. ¡Crea una!</p>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-3">
+          <motion.div
+            className="space-y-3"
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+          >
             {rooms.map((room) => (
-              <div
+              <motion.div
                 key={room.id}
-                className="bg-gray-900 border border-gray-700 hover:border-yellow-600/50 rounded-xl p-4 flex items-center justify-between transition cursor-pointer"
+                variants={{
+                  hidden: { opacity: 0, y: 12 },
+                  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 280, damping: 24 } },
+                }}
+                whileHover={{
+                  scale: 1.015,
+                  boxShadow: '0 0 24px rgba(255,215,0,0.12), 0 4px 20px rgba(0,0,0,0.5)',
+                  borderColor: 'rgba(255,215,0,0.4)',
+                }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => { playSound('click'); onJoinRoom(room.room_code); }}
+                className="rounded-xl p-4 flex items-center justify-between cursor-pointer"
+                style={{
+                  background: 'rgba(17,17,17,0.9)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  transition: 'border-color 0.2s',
+                }}
               >
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-bold text-yellow-400 text-lg">{room.room_code}</span>
+                    <span className="font-mono font-bold text-yellow-400 text-lg" style={{ textShadow: '0 0 10px rgba(255,215,0,0.3)' }}>
+                      {room.room_code}
+                    </span>
                     <span className="text-xs bg-green-900/40 text-green-400 border border-green-700/40 px-2 py-0.5 rounded-full">
                       Esperando
                     </span>
@@ -164,73 +207,122 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
                     {room.player_count}/{room.max_players} jugadores
                   </p>
                 </div>
-                <button className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-sm transition">
+                <motion.button
+                  whileHover={{ scale: 1.07, boxShadow: '0 0 18px rgba(255,215,0,0.4)' }}
+                  whileTap={{ scale: 0.94 }}
+                  className="text-black font-bold px-4 py-2 rounded-lg text-sm"
+                  style={{
+                    background: 'linear-gradient(135deg, #B8860B, #FFD700)',
+                    boxShadow: '0 0 10px rgba(184,134,11,0.3)',
+                    fontFamily: "'Cinzel', serif",
+                  }}
+                  onClick={(e) => { e.stopPropagation(); playSound('click'); onJoinRoom(room.room_code); }}
+                >
                   Unirse
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* Mode selector modal */}
-      {showModeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-gray-900 border border-yellow-600/30 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-center text-yellow-400 font-bold text-lg mb-5"
-              style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
-              MODO DE JUEGO
-            </h3>
+      <AnimatePresence>
+        {showModeModal && (
+          <motion.div
+            key="mode-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm px-4"
+            onClick={() => setShowModeModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.88, y: 24 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gray-900 border border-yellow-600/30 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+              style={{ boxShadow: '0 0 60px rgba(0,0,0,0.8), 0 0 30px rgba(255,215,0,0.06)' }}
+            >
+              <h3 className="text-center text-yellow-400 font-bold text-lg mb-5"
+                style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2, textShadow: '0 0 20px rgba(255,215,0,0.3)' }}>
+                MODO DE JUEGO
+              </h3>
 
-            <div className="space-y-3 mb-6">
-              {[
-                { id: 'caballos', emoji: '🏇', label: 'Carrera de Caballos', desc: 'Apuesta al palo ganador' },
-                { id: 'blackjack', emoji: '🃏', label: 'Blackjack', desc: 'Vence al dealer con 21' },
-              ].map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => setSelectedMode(mode.id)}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl border transition"
+              <div className="space-y-3 mb-6">
+                {[
+                  { id: 'caballos',  emoji: '🏇', label: 'Carrera de Caballos', desc: 'Apuesta al palo ganador' },
+                  { id: 'blackjack', emoji: '🃏', label: 'Blackjack',            desc: 'Vence al dealer con 21' },
+                ].map((mode, i) => (
+                  <motion.button
+                    key={mode.id}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    onClick={() => setSelectedMode(mode.id)}
+                    whileHover={{ scale: 1.02, boxShadow: selectedMode === mode.id ? '0 0 22px rgba(255,215,0,0.3)' : '0 0 12px rgba(255,255,255,0.05)' }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl"
+                    style={{
+                      background: selectedMode === mode.id ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
+                      border: `2px solid ${selectedMode === mode.id ? '#FFD700' : 'rgba(255,255,255,0.1)'}`,
+                      boxShadow: selectedMode === mode.id ? '0 0 16px rgba(255,215,0,0.2)' : 'none',
+                      transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
+                    }}
+                  >
+                    <span className="text-3xl">{mode.emoji}</span>
+                    <div className="text-left">
+                      <p className="text-white font-bold text-sm">{mode.label}</p>
+                      <p className="text-gray-400 text-xs">{mode.desc}</p>
+                    </div>
+                    <AnimatePresence>
+                      {selectedMode === mode.id && (
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.4 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.4 }}
+                          className="ml-auto text-yellow-400 text-lg"
+                        >
+                          ✓
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={() => setShowModeModal(false)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex-1 py-2.5 rounded-xl text-gray-400 text-sm font-medium"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  Cancelar
+                </motion.button>
+                <motion.button
+                  onClick={() => { playSound('click'); createRoom(selectedMode); }}
+                  whileHover={{ scale: 1.04, boxShadow: '0 0 28px rgba(255,215,0,0.5)' }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-black text-sm"
                   style={{
-                    background: selectedMode === mode.id ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
-                    border: `2px solid ${selectedMode === mode.id ? '#FFD700' : 'rgba(255,255,255,0.1)'}`,
+                    background: 'linear-gradient(180deg, #C09020 0%, #8B6914 50%, #C09020 100%)',
+                    border: '2px solid #FFD700',
+                    fontFamily: "'Cinzel', serif",
+                    boxShadow: '0 0 14px rgba(192,144,32,0.3)',
                   }}
                 >
-                  <span className="text-3xl">{mode.emoji}</span>
-                  <div className="text-left">
-                    <p className="text-white font-bold text-sm">{mode.label}</p>
-                    <p className="text-gray-400 text-xs">{mode.desc}</p>
-                  </div>
-                  {selectedMode === mode.id && (
-                    <span className="ml-auto text-yellow-400 text-lg">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowModeModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-gray-400 text-sm font-medium transition"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { playSound('click'); createRoom(selectedMode); }}
-                className="flex-1 py-2.5 rounded-xl font-bold text-black text-sm transition"
-                style={{
-                  background: 'linear-gradient(180deg, #C09020 0%, #8B6914 50%, #C09020 100%)',
-                  border: '2px solid #FFD700',
-                  fontFamily: "'Cinzel', serif",
-                }}
-              >
-                CREAR SALA
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  CREAR SALA
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Jugadores en línea — barra inferior fija */}
       <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-green-600/20 px-4 py-2 z-40">
