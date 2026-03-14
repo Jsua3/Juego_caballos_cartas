@@ -265,10 +265,10 @@ async function resolveRound(io, room) {
           payout = 0;
         } else if (dealerBust) {
           outcome = 'win';
-          payout = hand.bet;
+          payout = hand.bet * 2;
         } else if (playerVal > dealerVal) {
           outcome = 'win';
-          payout = hand.bet;
+          payout = hand.bet * 2;
         } else if (playerVal === dealerVal) {
           outcome = 'push';
           payout = hand.bet;

@@ -13,6 +13,8 @@ export default function BlackjackGame({
   onSendMessage,
   onLeave,
   players = [],
+  roomCode,
+  onShowQR,
 }) {
   const { user } = useAuth();
   const [chatInput, setChatInput] = useState('');
@@ -55,13 +57,26 @@ export default function BlackjackGame({
           <h1 className="text-yellow-400 font-black text-lg" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2 }}>
             🃏 BLACKJACK
           </h1>
-          <button
-            onClick={onLeave}
-            className="text-gray-500 hover:text-gray-300 text-sm transition px-3 py-1 rounded-lg"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            Salir
-          </button>
+          <div className="flex items-center gap-2">
+            {roomCode && (
+              <button
+                onClick={onShowQR}
+                title="Ver código QR de sala"
+                className="flex items-center gap-1 text-yellow-500 hover:text-yellow-300 text-xs font-bold transition px-2.5 py-1 rounded-lg"
+                style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)' }}
+              >
+                <span>▣</span>
+                <span className="hidden sm:inline font-mono">{roomCode}</span>
+              </button>
+            )}
+            <button
+              onClick={onLeave}
+              className="text-gray-500 hover:text-gray-300 text-sm transition px-3 py-1 rounded-lg"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              Salir
+            </button>
+          </div>
         </div>
 
         {phase === 'betting' && (
@@ -98,10 +113,11 @@ export default function BlackjackGame({
                   </>
                 ) : (
                   <p className="text-gray-500 text-sm">
-                    Turno de{' '}
+                    El jugador{' '}
                     <span className="text-yellow-400 font-medium">
                       {bjData.players?.find(p => p.userId === bjData.currentTurn?.userId)?.username ?? '…'}
                     </span>
+                    {' '}está jugando
                   </p>
                 )}
               </div>

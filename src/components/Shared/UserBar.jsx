@@ -9,7 +9,7 @@ export default function UserBar({ onPurchase, onStats }) {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur border-b border-yellow-600/20 px-4 py-2 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <span className="text-yellow-400 font-bold text-sm">🏇 Caballos</span>
+        <span className="text-yellow-400 font-bold text-sm">🎰 Sala de Apuestas</span>
         <span className="text-white font-medium">{user.username}</span>
       </div>
       <div className="flex items-center gap-3">

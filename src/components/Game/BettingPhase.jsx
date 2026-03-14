@@ -11,7 +11,7 @@ const SUITS = [
 
 function getSuit(id) { return SUITS.find((s) => s.id === id); }
 
-export default function BettingPhase({ roomState, onPlaceBet }) {
+export default function BettingPhase({ roomState, onPlaceBet, roomCode, onShowQR }) {
   const { user } = useAuth();
   const [selectedSuit, setSelectedSuit] = useState(null);
   const [betAmount, setBetAmount] = useState(100);
@@ -42,13 +42,26 @@ export default function BettingPhase({ roomState, onPlaceBet }) {
       <div className="w-full max-w-lg mt-6">
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold mb-1" style={{
-            background: 'linear-gradient(135deg, #FFD700, #B8860B, #FFD700)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            fontFamily: "'Cinzel', serif",
-          }}>
-            Fase de Apuestas
-          </h2>
+          <div className="flex items-center justify-center gap-3 mb-1">
+            <h2 className="text-3xl font-bold" style={{
+              background: 'linear-gradient(135deg, #FFD700, #B8860B, #FFD700)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              fontFamily: "'Cinzel', serif",
+            }}>
+              Fase de Apuestas
+            </h2>
+            {roomCode && (
+              <button
+                onClick={onShowQR}
+                title="Ver código QR de sala"
+                className="flex items-center gap-1 text-yellow-500 hover:text-yellow-300 text-xs font-bold transition px-2 py-1 rounded-lg"
+                style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)' }}
+              >
+                <span>▣</span>
+                <span className="hidden sm:inline font-mono">{roomCode}</span>
+              </button>
+            )}
+          </div>
           <p className="text-gray-400 text-sm">
             Turno de:{' '}
             <span className="text-yellow-400 font-bold">

@@ -10,6 +10,7 @@ import UserBar from './components/Shared/UserBar';
 import PurchaseModal from './components/Shared/PurchaseModal';
 import StatsModal from './components/Shared/StatsModal';
 import BlackjackGame from './components/Blackjack/BlackjackGame';
+import RoomCodeQR from './components/Shared/RoomCodeQR';
 
 /*
  * App phases:
@@ -43,6 +44,7 @@ export default function CarreraDeCaballos() {
   const [chatMessages, setChatMessages] = useState([]);
   const [socketError, setSocketError] = useState('');
   const [notification, setNotification] = useState('');
+  const [showQR, setShowQR] = useState(false);
 
   // Connect socket and authenticate for online presence
   useEffect(() => {
@@ -350,6 +352,7 @@ export default function CarreraDeCaballos() {
           onLeave={handleLeaveRoom}
           chatMessages={chatMessages}
           onSendMessage={handleSendMessage}
+          onShowQR={() => setShowQR(true)}
         />
       )}
 
@@ -357,6 +360,8 @@ export default function CarreraDeCaballos() {
         <BettingPhase
           roomState={roomState}
           onPlaceBet={handlePlaceBet}
+          roomCode={roomCode}
+          onShowQR={() => setShowQR(true)}
         />
       )}
 
@@ -370,6 +375,8 @@ export default function CarreraDeCaballos() {
           players={roomState.players}
           chatMessages={chatMessages}
           onSendMessage={handleSendMessage}
+          roomCode={roomCode}
+          onShowQR={() => setShowQR(true)}
         />
       )}
 
@@ -391,9 +398,12 @@ export default function CarreraDeCaballos() {
           onSendMessage={handleSendMessage}
           onLeave={handleLeaveRoom}
           players={roomState.players}
+          roomCode={roomCode}
+          onShowQR={() => setShowQR(true)}
         />
       )}
 
+      {showQR && roomCode && <RoomCodeQR roomCode={roomCode} onClose={() => setShowQR(false)} />}
       {showPurchase && <PurchaseModal onClose={() => setShowPurchase(false)} />}
       {showStats && <StatsModal onClose={() => setShowStats(false)} />}
     </>
@@ -401,7 +411,7 @@ export default function CarreraDeCaballos() {
 }
 
 /* ── Waiting Room ── */
-function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, chatMessages = [], onSendMessage }) {
+function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, chatMessages = [], onSendMessage, onShowQR }) {
   const { players = [], status } = roomState;
   const { user } = useAuth();
   const canStart = players.length >= 2 && status === 'waiting';
@@ -430,8 +440,15 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
           <p className="text-gray-400 text-sm mb-1" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 3 }}>
             CÓDIGO DE SALA
           </p>
-          <div className="inline-block bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-6 py-3">
+          <div className="inline-flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-6 py-3">
             <span className="font-mono font-black text-yellow-400 text-3xl tracking-widest">{roomCode}</span>
+            <button
+              onClick={onShowQR}
+              title="Ver código QR"
+              className="text-yellow-400 hover:text-yellow-300 text-xl transition"
+            >
+              ▣
+            </button>
           </div>
           <p className="text-gray-500 text-xs mt-2">Comparte este código con tus amigos</p>
         </div>

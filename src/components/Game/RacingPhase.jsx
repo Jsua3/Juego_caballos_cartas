@@ -89,7 +89,7 @@ function CasinoCard({ suitId, faceDown = false, small = false }) {
 const TRACK_GRID = '1.75rem 1fr 2rem';
 const TRACK_GAP  = '0.5rem';
 
-export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players, chatMessages = [], onSendMessage }) {
+export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players, chatMessages = [], onSendMessage, roomCode, onShowQR }) {
   const logRef        = useRef(null);
   const chatEndRef    = useRef(null);   // mobile tab chat
   const sidebarEndRef = useRef(null);   // desktop sidebar chat
@@ -208,7 +208,7 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
           <div className="max-w-4xl mx-auto lg:mx-0">
 
             {/* Title */}
-            <div className="text-center mb-4">
+            <div className="flex items-center justify-center gap-3 mb-4">
               <h2 style={{
                 background: 'linear-gradient(135deg, #FFD700, #B8860B, #FFD700)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -216,6 +216,17 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
               }}>
                 ¡EN CARRERA!
               </h2>
+              {roomCode && (
+                <button
+                  onClick={onShowQR}
+                  title="Ver código QR de sala"
+                  className="flex items-center gap-1 text-yellow-500 hover:text-yellow-300 text-xs font-bold transition px-2 py-1 rounded-lg"
+                  style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)' }}
+                >
+                  <span>▣</span>
+                  <span className="hidden sm:inline font-mono">{roomCode}</span>
+                </button>
+              )}
             </div>
 
             {/* Players */}
