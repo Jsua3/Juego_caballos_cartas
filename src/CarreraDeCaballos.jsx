@@ -534,13 +534,13 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: players.length * 0.08 + i * 0.06 }}
-                className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-gray-800/60"
+                className="flex items-center gap-3 p-2 rounded-lg border border-dashed border-gray-600/40"
               >
-                <div className="w-9 h-9 rounded-full border border-dashed border-gray-700 flex items-center justify-center">
-                  <span className="text-gray-700 text-xs">?</span>
+                <div className="w-9 h-9 rounded-full border border-dashed border-gray-500/50 flex items-center justify-center">
+                  <span className="text-gray-500 text-xs">?</span>
                 </div>
                 <div>
-                  <p className="text-gray-700 text-sm italic">Esperando jugador…</p>
+                  <p className="text-gray-400 text-sm italic">Esperando jugador…</p>
                 </div>
               </motion.div>
             ))}
@@ -552,8 +552,8 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
             onClick={() => { playSound('click'); onLeave(); }}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="flex-1 py-3 rounded-xl font-medium text-gray-400"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+            className="flex-1 py-3 rounded-xl font-medium text-gray-300"
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}
           >
             Salir
           </motion.button>
@@ -567,10 +567,13 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
               } : {}}
               whileTap={canStart ? { scale: 0.97 } : {}}
               transition={{ type: 'spring', stiffness: 380, damping: 18 }}
-              className="flex-1 py-3 rounded-xl font-bold text-black disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex-1 py-3 rounded-xl font-bold disabled:cursor-not-allowed"
               style={{
-                background: 'linear-gradient(180deg, #C09020 0%, #8B6914 50%, #C09020 100%)',
-                border: '2px solid #FFD700',
+                background: canStart
+                  ? 'linear-gradient(180deg, #C09020 0%, #8B6914 50%, #C09020 100%)'
+                  : 'rgba(120,100,20,0.35)',
+                border: `2px solid ${canStart ? '#FFD700' : 'rgba(184,134,11,0.4)'}`,
+                color: canStart ? '#000' : '#C09020',
                 fontFamily: "'Cinzel', serif",
                 boxShadow: canStart ? '0 0 18px rgba(192,144,32,0.35)' : 'none',
               }}
@@ -579,7 +582,7 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
             </motion.button>
           )}
           {!isOwner && (
-            <div className="flex-1 py-3 rounded-xl text-center text-gray-500 text-sm" style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <div className="flex-1 py-3 rounded-xl text-center text-gray-400 text-sm" style={{ border: '1px dashed rgba(255,255,255,0.2)' }}>
               Esperando al dueño…
             </div>
           )}
@@ -588,13 +591,13 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
         {/* Chat */}
         <div className="mt-4 rounded-xl border border-gray-700/50 bg-black/40 overflow-hidden">
           <div className="px-3 py-2 border-b border-gray-700/40">
-            <span className="text-gray-400 text-xs font-bold" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 1 }}>
+            <span className="text-gray-300 text-xs font-bold" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 1 }}>
               CHAT
             </span>
           </div>
           <div className="h-32 overflow-y-auto px-3 py-2 space-y-1">
             {chatMessages.length === 0 && (
-              <p className="text-gray-600 text-xs text-center mt-4">Nadie ha escrito aún…</p>
+              <p className="text-gray-400 text-xs text-center mt-4">Nadie ha escrito aún…</p>
             )}
             {chatMessages.map((m, i) => (
               <p key={i} className="text-xs leading-5">
@@ -614,11 +617,11 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
               onKeyDown={(e) => e.key === 'Enter' && sendChat()}
               maxLength={200}
               placeholder="Escribe un mensaje…"
-              className="flex-1 bg-gray-800/60 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-yellow-600/50"
+              className="flex-1 bg-gray-800/60 border border-gray-600 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-yellow-600/50"
             />
             <button
               onClick={() => { playSound('click'); sendChat(); }}
-              className="bg-yellow-700/60 hover:bg-yellow-600/80 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+              className="bg-yellow-600/80 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
             >
               Enviar
             </button>
