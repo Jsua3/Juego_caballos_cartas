@@ -22,6 +22,7 @@ router.get('/', authMiddleware, async (req, res) => {
       FROM game_rooms gr
       LEFT JOIN room_players rp ON rp.room_id = gr.id
       WHERE gr.status = 'waiting'
+        AND gr.created_at > DATE_SUB(NOW(), INTERVAL 2 MINUTE)
       GROUP BY gr.id
       HAVING COUNT(rp.id) < gr.max_players
       ORDER BY gr.created_at DESC

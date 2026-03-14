@@ -5,6 +5,7 @@
   "homepage": "https://Jsua3.github.io/Juego_caballos_cartas",
   "dependencies": {
     "axios": "^1.13.6",
+    "framer-motion": "^12.36.0",
     "gh-pages": "^6.1.1",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",

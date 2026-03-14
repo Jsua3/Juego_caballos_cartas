@@ -143,6 +143,16 @@ export default function CarreraDeCaballos() {
       setTimeout(() => setSocketError(''), 5000);
     };
 
+    const onRoomClosed = ({ message }) => {
+      setSocketError(message);
+      setRoomCode(null);
+      setPhase('lobby');
+      setRoomState({ players: [], status: 'waiting', ownerId: null });
+      setBjData(null);
+      setChatMessages([]);
+      setTimeout(() => setSocketError(''), 5000);
+    };
+
     // ── Blackjack events ──────────────────────────────────────────────────────
     const onBjBettingPhase = ({ timeLimit }) => {
       setBjData({ phase: 'betting', timeLimit, players: [], betsPlaced: [] });
@@ -229,6 +239,7 @@ export default function CarreraDeCaballos() {
     socket.on('error', onError);
     socket.on('player_left', onPlayerLeft);
     socket.on('race_cancelled', onRaceCancelled);
+    socket.on('room_closed', onRoomClosed);
     socket.on('online_users', onOnlineUsers);
     socket.on('bj_betting_phase', onBjBettingPhase);
     socket.on('bj_bet_placed', onBjBetPlaced);
@@ -252,6 +263,7 @@ export default function CarreraDeCaballos() {
       socket.off('error', onError);
       socket.off('player_left', onPlayerLeft);
       socket.off('race_cancelled', onRaceCancelled);
+      socket.off('room_closed', onRoomClosed);
       socket.off('online_users', onOnlineUsers);
       socket.off('bj_betting_phase', onBjBettingPhase);
       socket.off('bj_bet_placed', onBjBetPlaced);

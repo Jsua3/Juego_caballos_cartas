@@ -22,9 +22,38 @@ const { registerBlackjackEvents, startBlackjackBetting } = require('./blackjackE
 const rooms = new Map();
 const onlineUsers = new Map(); // socketId → { userId, username }
 
+const IDLE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutos
+
 function broadcastOnlineUsers(io) {
   const list = Array.from(onlineUsers.values());
   io.emit('online_users', list);
+}
+
+function scheduleIdleClose(io, room) {
+  if (room.idleTimer) clearTimeout(room.idleTimer);
+  room.idleTimer = setTimeout(async () => {
+    if (!rooms.has(room.roomCode)) return;
+    if (room.status !== 'waiting') return;
+    // Notificar a los jugadores conectados
+    io.to(room.roomCode).emit('room_closed', { message: 'La sala fue cerrada por inactividad.' });
+    // Actualizar DB
+    try {
+      await pool.query(
+        `UPDATE game_rooms SET status = 'finished', finished_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [room.dbRoomId]
+      );
+    } catch (err) {
+      console.error('DB error closing idle room', err);
+    }
+    rooms.delete(room.roomCode);
+  }, IDLE_TIMEOUT_MS);
+}
+
+function cancelIdleClose(room) {
+  if (room.idleTimer) {
+    clearTimeout(room.idleTimer);
+    room.idleTimer = null;
+  }
 }
 
 function getRoomBySocket(socketId) {
@@ -228,8 +257,10 @@ module.exports = function registerGameEvents(io) {
             raceInterval:  null,
             bettingOrder:  [],
             currentBetIdx: 0,
+            idleTimer:     null,
           };
           rooms.set(roomCode, room);
+          scheduleIdleClose(io, room);
         } catch {
           return socket.emit('error', { message: 'DB error loading room' });
         }
@@ -285,6 +316,7 @@ module.exports = function registerGameEvents(io) {
       room.players = room.players.filter((p) => p.socketId !== socket.id);
       socket.leave(roomCode);
       if (room.players.length === 0) {
+        cancelIdleClose(room);
         rooms.delete(roomCode);
         return;
       }
@@ -302,6 +334,7 @@ module.exports = function registerGameEvents(io) {
       if (room.status !== 'waiting')  return socket.emit('error', { message: 'Cannot start now' });
       if (room.players.length < 2)    return socket.emit('error', { message: 'Need at least 2 players' });
 
+      cancelIdleClose(room);
       if (room.gameMode === 'blackjack') {
         return startBlackjackBetting(io, room);
       }
@@ -394,6 +427,7 @@ module.exports = function registerGameEvents(io) {
 
       if (room.players.length === 0) {
         if (room.raceInterval) clearInterval(room.raceInterval);
+        cancelIdleClose(room);
         rooms.delete(room.roomCode);
         return;
       }
