@@ -8,71 +8,91 @@ export default function UserBar({ onPurchase, onStats }) {
   if (!user) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-gray-950/97 backdrop-blur border-b border-yellow-600/15 px-4 py-2 flex items-center justify-between"
-      style={{ boxShadow: '0 1px 30px rgba(0,0,0,0.6), 0 1px 0 rgba(255,215,0,0.06)' }}
+    <div
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2"
+      style={{
+        background: 'rgba(4,8,5,0.97)',
+        borderBottom: '1px solid rgba(180,134,20,0.15)',
+        boxShadow: '0 2px 20px rgba(0,0,0,0.7)',
+      }}
     >
-      <div className="flex items-center gap-3">
-        <span className="text-yellow-400 font-bold text-sm" style={{ fontFamily: "'Cinzel', serif", letterSpacing: 1, textShadow: '0 0 14px rgba(255,215,0,0.35)' }}>
-          🎰 Sala de Apuestas
+      {/* Izquierda: logo + nombre app + usuario */}
+      <div className="flex items-center gap-2.5">
+        <span className="text-lg">🎰</span>
+        <span
+          className="text-white font-bold text-sm"
+          style={{ fontFamily: "'Cinzel', serif", letterSpacing: 0.5 }}
+        >
+          Sala de Apuestas
         </span>
-        <span className="text-white font-medium text-sm opacity-70">{user.username}</span>
+        <span className="text-gray-500 text-sm">{user.username}</span>
       </div>
 
+      {/* Derecha: puntos + botones */}
       <div className="flex items-center gap-2">
-        {/* Points badge */}
-        <motion.div
-          whileHover={{ scale: 1.05, boxShadow: '0 0 16px rgba(255,215,0,0.3)' }}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1 cursor-default"
-          style={{ background: 'rgba(255,215,0,0.07)', border: '1px solid rgba(255,215,0,0.22)' }}
-        >
-          <span className="text-yellow-400 text-sm font-bold">{user.points?.toLocaleString()}</span>
-          <span className="text-yellow-700 text-xs">pts</span>
-        </motion.div>
+        {/* Puntos */}
+        <div className="flex items-baseline gap-1 mr-1">
+          <span
+            className="font-black text-xl text-white"
+            style={{ letterSpacing: -0.5 }}
+          >
+            {user.points?.toLocaleString()}
+          </span>
+          <span className="text-gray-400 text-sm font-medium">pts</span>
+        </div>
 
         {/* Stats */}
         <motion.button
           onClick={() => { playSound('click'); onStats?.(); }}
-          whileHover={{ scale: 1.07, boxShadow: '0 0 18px rgba(59,130,246,0.45)' }}
+          whileHover={{ scale: 1.06, boxShadow: '0 0 18px rgba(59,130,246,0.5)' }}
           whileTap={{ scale: 0.93 }}
           transition={{ type: 'spring', stiffness: 420, damping: 18 }}
-          title="Ver estadísticas"
-          className="flex items-center gap-1 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1.5 rounded-lg"
           style={{
             background: 'linear-gradient(135deg, #1E3A8A, #2563EB)',
-            border: '1px solid rgba(59,130,246,0.35)',
-            boxShadow: '0 0 8px rgba(37,99,235,0.2)',
+            boxShadow: '0 0 8px rgba(37,99,235,0.25)',
+            fontFamily: "'Cinzel', serif",
+            letterSpacing: 0.5,
           }}
         >
           <span>📊</span>
-          <span className="hidden sm:inline">Stats</span>
+          <span>Stats</span>
         </motion.button>
 
-        {/* Points purchase */}
+        {/* Puntos / comprar */}
         <motion.button
           onClick={() => { playSound('click'); onPurchase(); }}
-          whileHover={{ scale: 1.07, boxShadow: '0 0 18px rgba(34,197,94,0.45)' }}
+          whileHover={{ scale: 1.06, boxShadow: '0 0 18px rgba(212,168,53,0.5)' }}
           whileTap={{ scale: 0.93 }}
           transition={{ type: 'spring', stiffness: 420, damping: 18 }}
-          title="Comprar o canjear puntos"
-          className="flex items-center gap-1 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg"
+          className="flex items-center gap-1.5 text-black text-xs font-bold px-3 py-1.5 rounded-lg"
           style={{
-            background: 'linear-gradient(135deg, #14532D, #16A34A)',
-            border: '1px solid rgba(34,197,94,0.35)',
-            boxShadow: '0 0 8px rgba(22,163,74,0.2)',
+            background: 'linear-gradient(135deg, #8B6400, #C09020, #D4A835)',
+            boxShadow: '0 0 8px rgba(180,134,20,0.25)',
+            fontFamily: "'Cinzel', serif",
+            letterSpacing: 0.5,
           }}
         >
-          <span>+</span>
-          <span className="hidden sm:inline">Puntos</span>
+          <span>💰</span>
+          <span>Puntos</span>
         </motion.button>
 
-        {/* Logout */}
+        {/* Salir */}
         <motion.button
           onClick={() => { playSound('click'); logout(); }}
-          whileHover={{ scale: 1.06, color: '#ffffff' }}
-          whileTap={{ scale: 0.94 }}
-          className="text-gray-500 text-xs transition-colors"
+          whileHover={{ scale: 1.06, boxShadow: '0 0 14px rgba(59,130,246,0.4)' }}
+          whileTap={{ scale: 0.93 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+          className="flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1.5 rounded-lg"
+          style={{
+            background: 'linear-gradient(135deg, #1E3A8A, #2563EB)',
+            boxShadow: '0 0 8px rgba(37,99,235,0.2)',
+            fontFamily: "'Cinzel', serif",
+            letterSpacing: 0.5,
+          }}
         >
-          Salir
+          <span>🚪</span>
+          <span>Salir</span>
         </motion.button>
       </div>
     </div>

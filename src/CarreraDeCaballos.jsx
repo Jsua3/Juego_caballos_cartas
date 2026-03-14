@@ -455,8 +455,11 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
 
   return (
     <div className="min-h-screen pt-16 px-4 pb-8 flex flex-col items-center" style={{
-      backgroundImage: `linear-gradient(rgba(4,10,4,0.88), rgba(4,10,4,0.88)), url(${process.env.PUBLIC_URL}/background.jpg)`,
-      backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed',
+      backgroundColor: '#072318',
+      backgroundImage: `
+        repeating-linear-gradient(45deg,  rgba(180,134,20,0.13) 0px, rgba(180,134,20,0.13) 1px, transparent 1px, transparent 42px),
+        repeating-linear-gradient(-45deg, rgba(180,134,20,0.13) 0px, rgba(180,134,20,0.13) 1px, transparent 1px, transparent 42px)
+      `,
     }}>
       <div className="w-full max-w-md mt-8">
         {/* Room code */}
