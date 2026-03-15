@@ -9,6 +9,7 @@ const {
   SUITS,
 } = require('../game/gameLogic');
 const { registerBlackjackEvents, startBlackjackBetting } = require('./blackjackEvents');
+const { onlineUsers, userSockets } = require('./state');
 
 /**
  * In-memory room state. Key = roomCode.
@@ -20,7 +21,6 @@ const { registerBlackjackEvents, startBlackjackBetting } = require('./blackjackE
  * }
  */
 const rooms = new Map();
-const onlineUsers = new Map(); // socketId → { userId, username }
 
 const IDLE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutos
 
@@ -217,6 +217,7 @@ module.exports = function registerGameEvents(io) {
         const [rows] = await pool.query('SELECT avatar_url FROM users WHERE id = ?', [payload.id]);
         const avatar_url = rows[0]?.avatar_url ?? null;
         onlineUsers.set(socket.id, { userId: payload.id, username: payload.username, avatar_url });
+        userSockets.set(payload.id, socket.id);
         broadcastOnlineUsers(io);
       } catch { /* token inválido, ignorar */ }
     });
@@ -418,9 +419,117 @@ module.exports = function registerGameEvents(io) {
       });
     });
 
+    // ── send_direct_message ───────────────────────────────────────────────────
+    socket.on('send_direct_message', async ({ receiverId, message }) => {
+      const sender = onlineUsers.get(socket.id);
+      if (!sender) return;
+      const msg = message?.trim().slice(0, 500);
+      if (!msg) return;
+      try {
+        const [friendRows] = await pool.query(
+          `SELECT id FROM friendships WHERE status = 'accepted'
+           AND ((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?))`,
+          [sender.userId, receiverId, receiverId, sender.userId]
+        );
+        if (friendRows.length === 0) return;
+
+        const [result] = await pool.query(
+          `INSERT INTO direct_messages (sender_id, receiver_id, message) VALUES (?, ?, ?)`,
+          [sender.userId, receiverId, msg]
+        );
+        const timestamp = new Date().toISOString();
+
+        const receiverSocketId = userSockets.get(parseInt(receiverId));
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit('direct_message_received', {
+            id:             result.insertId,
+            senderId:       sender.userId,
+            senderUsername: sender.username,
+            senderAvatar:   sender.avatar_url,
+            message:        msg,
+            timestamp,
+          });
+        }
+        // Confirm to sender
+        socket.emit('direct_message_sent', {
+          id:         result.insertId,
+          receiverId: parseInt(receiverId),
+          message:    msg,
+          timestamp,
+        });
+      } catch (err) {
+        console.error('DM error', err);
+      }
+    });
+
+    // ── send_game_invite ──────────────────────────────────────────────────────
+    socket.on('send_game_invite', async ({ receiverId, roomCode }) => {
+      const sender = onlineUsers.get(socket.id);
+      if (!sender) return;
+      try {
+        const [friendRows] = await pool.query(
+          `SELECT id FROM friendships WHERE status = 'accepted'
+           AND ((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?))`,
+          [sender.userId, receiverId, receiverId, sender.userId]
+        );
+        if (friendRows.length === 0) return;
+
+        const [result] = await pool.query(
+          `INSERT INTO game_invites (sender_id, receiver_id, room_code) VALUES (?, ?, ?)`,
+          [sender.userId, receiverId, roomCode]
+        );
+
+        const receiverSocketId = userSockets.get(parseInt(receiverId));
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit('game_invite_received', {
+            inviteId:       result.insertId,
+            senderId:       sender.userId,
+            senderUsername: sender.username,
+            senderAvatar:   sender.avatar_url,
+            roomCode,
+          });
+        }
+      } catch (err) {
+        console.error('Game invite error', err);
+      }
+    });
+
+    // ── respond_game_invite ───────────────────────────────────────────────────
+    socket.on('respond_game_invite', async ({ inviteId, accept }) => {
+      const me = onlineUsers.get(socket.id);
+      if (!me) return;
+      try {
+        const [rows] = await pool.query(
+          `SELECT * FROM game_invites WHERE id = ? AND receiver_id = ? AND status = 'pending'`,
+          [inviteId, me.userId]
+        );
+        if (rows.length === 0) return;
+
+        const invite = rows[0];
+        await pool.query(
+          `UPDATE game_invites SET status = ? WHERE id = ?`,
+          [accept ? 'accepted' : 'declined', inviteId]
+        );
+
+        if (accept) {
+          const senderSocketId = userSockets.get(invite.sender_id);
+          if (senderSocketId) {
+            io.to(senderSocketId).emit('game_invite_accepted', {
+              receiverUsername: me.username,
+              roomCode:         invite.room_code,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Respond invite error', err);
+      }
+    });
+
     // ── disconnect ───────────────────────────────────────────────────────────
     socket.on('disconnect', () => {
       console.log('Socket disconnected:', socket.id);
+      const userInfo = onlineUsers.get(socket.id);
+      if (userInfo) userSockets.delete(userInfo.userId);
       onlineUsers.delete(socket.id);
       broadcastOnlineUsers(io);
       const room = getRoomBySocket(socket.id);

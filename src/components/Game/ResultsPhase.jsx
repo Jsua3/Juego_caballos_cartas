@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useEffect, useState } from 'react';
+import { useAuth, API_URL } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
 import AvatarCircle from '../Shared/AvatarCircle';
+import axios from 'axios';
 
 const SUITS = [
   { id: 'oros',    name: 'Oros',    emoji: '🪙', color: '#FFD700', glow: '#FFD70060' },
@@ -38,10 +39,12 @@ function Confetti() {
   );
 }
 
-export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeaveLobby, onViewProfile }) {
-  const { user, updatePoints } = useAuth();
+export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeaveLobby, onViewProfile, onAddFriend }) {
+  const { user, updatePoints, token } = useAuth();
   const suit = getSuit(winnerSuit);
   const myResult = results?.find((r) => r.userId === user?.id);
+  const [addedFriends, setAddedFriends] = useState(new Set());
+  const [friendStatuses, setFriendStatuses] = useState({});
 
   useEffect(() => {
     playSound('win');
@@ -51,6 +54,31 @@ export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeave
   if (myResult?.pointsAfter !== undefined) {
     updatePoints(myResult.pointsAfter);
   }
+
+  // Fetch friendship status for all other players
+  useEffect(() => {
+    if (!results || !token) return;
+    const others = results.filter((r) => r.userId !== user?.id);
+    const headers = { Authorization: `Bearer ${token}` };
+    others.forEach((r) => {
+      axios.get(`${API_URL}/api/friends/status/${r.userId}`, { headers })
+        .then((res) => setFriendStatuses((prev) => ({ ...prev, [r.userId]: res.data.status })))
+        .catch(() => {});
+    });
+  }, [results, token, user?.id]); // eslint-disable-line
+
+  const handleAddFriend = async (targetUserId) => {
+    playSound('click');
+    try {
+      await axios.post(
+        `${API_URL}/api/friends/request`,
+        { userId: targetUserId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAddedFriends((prev) => new Set([...prev, targetUserId]));
+      setFriendStatuses((prev) => ({ ...prev, [targetUserId]: 'sent' }));
+    } catch { /* ignore */ }
+  };
 
 
   return (
@@ -135,11 +163,28 @@ export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeave
                       <p className="text-gray-400 text-xs">apostó {r.betAmount?.toLocaleString()} a {rSuit?.name}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-bold text-sm ${won ? 'text-green-400' : 'text-red-400'}`}>
-                      {won ? `+${(r.betAmount * 4).toLocaleString()}` : `-${r.betAmount?.toLocaleString()}`}
-                    </p>
-                    <p className="text-gray-400 text-xs">{r.pointsAfter?.toLocaleString()} pts</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className={`font-bold text-sm ${won ? 'text-green-400' : 'text-red-400'}`}>
+                        {won ? `+${(r.betAmount * 4).toLocaleString()}` : `-${r.betAmount?.toLocaleString()}`}
+                      </p>
+                      <p className="text-gray-400 text-xs">{r.pointsAfter?.toLocaleString()} pts</p>
+                    </div>
+                    {r.userId !== user?.id && friendStatuses[r.userId] === 'none' && !addedFriends.has(r.userId) && (
+                      <button
+                        onClick={() => handleAddFriend(r.userId)}
+                        className="text-xs px-2 py-1 rounded-lg font-bold transition whitespace-nowrap"
+                        style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.25)', color: '#FFD700' }}
+                      >
+                        + Amigo
+                      </button>
+                    )}
+                    {r.userId !== user?.id && (friendStatuses[r.userId] === 'sent' || addedFriends.has(r.userId)) && (
+                      <span className="text-gray-600 text-xs whitespace-nowrap">Pendiente</span>
+                    )}
+                    {r.userId !== user?.id && friendStatuses[r.userId] === 'accepted' && (
+                      <span className="text-green-500 text-xs">✓</span>
+                    )}
                   </div>
                 </div>
               );

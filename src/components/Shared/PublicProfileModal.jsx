@@ -19,23 +19,47 @@ function StatBox({ label, value, highlight }) {
   );
 }
 
-export default function PublicProfileModal({ userId, onClose }) {
+export default function PublicProfileModal({ userId, onClose, onSendMessage }) {
   const { token } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
+  const [profile, setProfile]           = useState(null);
+  const [loading, setLoading]           = useState(true);
+  const [error,   setError]             = useState('');
+  const [friendship, setFriendship]     = useState({ status: 'none', friendshipId: null });
+  const [fsLoading, setFsLoading]       = useState(false);
 
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
     setError('');
-    axios
-      .get(`${API_URL}/api/users/${userId}/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
+    setFriendship({ status: 'none', friendshipId: null });
+    const headers = { Authorization: `Bearer ${token}` };
+    Promise.all([
+      axios.get(`${API_URL}/api/users/${userId}/profile`, { headers }),
+      axios.get(`${API_URL}/api/friends/status/${userId}`, { headers }),
+    ])
+      .then(([profileRes, fsRes]) => {
+        setProfile(profileRes.data);
+        setFriendship(fsRes.data);
+        setLoading(false);
       })
-      .then((res) => { setProfile(res.data); setLoading(false); })
       .catch(() => { setError('No se pudo cargar el perfil'); setLoading(false); });
   }, [userId, token]);
+
+  const sendFriendRequest = async () => {
+    setFsLoading(true);
+    playSound('click');
+    try {
+      const res = await axios.post(
+        `${API_URL}/api/friends/request`,
+        { userId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFriendship({ status: 'sent', friendshipId: res.data.friendshipId });
+    } catch (err) {
+      console.error(err.response?.data?.error);
+    }
+    setFsLoading(false);
+  };
 
   return (
     <motion.div
@@ -104,6 +128,45 @@ export default function PublicProfileModal({ userId, onClose }) {
             <p className="text-gray-600 text-xs text-center">
               Miembro desde {new Date(profile.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' })}
             </p>
+
+            {/* Friendship actions */}
+            {friendship.status !== 'self' && (
+              <div className="flex gap-2 mt-1">
+                {friendship.status === 'none' && (
+                  <motion.button
+                    onClick={sendFriendRequest}
+                    disabled={fsLoading}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex-1 py-2 rounded-xl text-xs font-bold disabled:opacity-50"
+                    style={{ background: 'rgba(255,215,0,0.13)', border: '1px solid rgba(255,215,0,0.3)', color: '#FFD700', fontFamily: "'Cinzel', serif" }}
+                  >
+                    + Agregar amigo
+                  </motion.button>
+                )}
+                {friendship.status === 'sent' && (
+                  <div className="flex-1 py-2 rounded-xl text-xs text-center text-gray-500" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                    Solicitud enviada
+                  </div>
+                )}
+                {friendship.status === 'received' && (
+                  <div className="flex-1 py-2 rounded-xl text-xs text-center text-yellow-500" style={{ border: '1px solid rgba(255,215,0,0.2)' }}>
+                    Te envió solicitud
+                  </div>
+                )}
+                {friendship.status === 'accepted' && (
+                  <motion.button
+                    onClick={() => { playSound('click'); onClose(); onSendMessage?.({ id: userId, username: profile.username, display_name: profile.display_name, avatar_url: profile.avatar_url }); }}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex-1 py-2 rounded-xl text-xs font-bold"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#E5E7EB' }}
+                  >
+                    💬 Enviar mensaje
+                  </motion.button>
+                )}
+              </div>
+            )}
           </>
         )}
 

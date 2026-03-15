@@ -15,6 +15,8 @@ import RoomCodeQR from './components/Shared/RoomCodeQR';
 import ProfileModal from './components/Shared/ProfileModal';
 import PublicProfileModal from './components/Shared/PublicProfileModal';
 import AvatarCircle from './components/Shared/AvatarCircle';
+import FriendsPanel from './components/Social/FriendsPanel';
+import GameInviteNotification from './components/Social/GameInviteNotification';
 
 /*
  * App phases:
@@ -51,6 +53,10 @@ export default function CarreraDeCaballos() {
   const [socketError,    setSocketError]    = useState('');
   const [notification,   setNotification]   = useState('');
   const [showQR,         setShowQR]         = useState(false);
+  const [showFriends,    setShowFriends]    = useState(false);
+  const [friendsBadge,   setFriendsBadge]   = useState(0);
+  const [gameInvites,    setGameInvites]    = useState([]);
+  const [friendsPanelMsg, setFriendsPanelMsg] = useState(null); // pre-open chat with this friend
 
   // Connect socket and authenticate for online presence
   useEffect(() => {
@@ -237,6 +243,25 @@ export default function CarreraDeCaballos() {
       if (myResult) updatePoints(myResult.pointsAfter);
     };
 
+    // ── Social events ─────────────────────────────────────────────────────────
+    const onFriendRequestReceived = () => {
+      setFriendsBadge((prev) => prev + 1);
+    };
+    const onFriendRequestAccepted = () => {
+      // Friend accepted our request — refresh badge by decrementing pending
+    };
+    const onDirectMessageReceived = () => {
+      setFriendsBadge((prev) => prev + 1);
+    };
+    const onGameInviteReceived = (data) => {
+      setGameInvites((prev) => [...prev, data]);
+    };
+
+    socket.on('friend_request_received', onFriendRequestReceived);
+    socket.on('friend_request_accepted', onFriendRequestAccepted);
+    socket.on('direct_message_received', onDirectMessageReceived);
+    socket.on('game_invite_received',    onGameInviteReceived);
+
     socket.on('message_received', onMessageReceived);
     socket.on('room_updated', onRoomUpdated);
     socket.on('betting_start', onBettingStart);
@@ -261,6 +286,11 @@ export default function CarreraDeCaballos() {
     socket.on('bj_round_result', onBjRoundResult);
 
     return () => {
+      socket.off('friend_request_received', onFriendRequestReceived);
+      socket.off('friend_request_accepted', onFriendRequestAccepted);
+      socket.off('direct_message_received', onDirectMessageReceived);
+      socket.off('game_invite_received',    onGameInviteReceived);
+
       socket.off('message_received', onMessageReceived);
       socket.off('room_updated', onRoomUpdated);
       socket.off('betting_start', onBettingStart);
@@ -358,6 +388,8 @@ export default function CarreraDeCaballos() {
         onPurchase={() => setShowPurchase(true)}
         onStats={() => setShowStats(true)}
         onProfile={() => setShowProfile(true)}
+        onFriends={() => { setShowFriends(true); setFriendsBadge(0); }}
+        friendsBadge={friendsBadge}
       />
 
       {/* Socket error toast */}
@@ -447,8 +479,40 @@ export default function CarreraDeCaballos() {
       {showStats && <StatsModal onClose={() => setShowStats(false)} />}
       {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
       {publicProfileId && (
-        <PublicProfileModal userId={publicProfileId} onClose={() => setPublicProfileId(null)} />
-      )}}
+        <PublicProfileModal
+          userId={publicProfileId}
+          onClose={() => setPublicProfileId(null)}
+          onSendMessage={(friend) => {
+            setPublicProfileId(null);
+            setFriendsPanelMsg(friend);
+            setShowFriends(true);
+            setFriendsBadge(0);
+          }}
+        />
+      )}
+
+      {/* Friends panel (slide-in drawer) */}
+      <FriendsPanel
+        isOpen={showFriends}
+        onClose={() => { setShowFriends(false); setFriendsPanelMsg(null); }}
+        roomCode={roomCode}
+        onJoinRoom={handleJoinRoom}
+        initialChatTarget={friendsPanelMsg}
+      />
+      {/* Click-away overlay when friends panel is open */}
+      {showFriends && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => { setShowFriends(false); setFriendsPanelMsg(null); }}
+        />
+      )}
+
+      {/* Game invite toasts */}
+      <GameInviteNotification
+        invites={gameInvites}
+        onAccept={(code) => { handleJoinRoom(code); }}
+        onDismiss={(inviteId) => setGameInvites((prev) => prev.filter((i) => i.inviteId !== inviteId))}
+      />
     </>
   );
 }

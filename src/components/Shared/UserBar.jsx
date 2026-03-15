@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
 import AvatarCircle from './AvatarCircle';
 
-export default function UserBar({ onPurchase, onStats, onProfile }) {
+export default function UserBar({ onPurchase, onStats, onProfile, onFriends, friendsBadge = 0 }) {
   const { user, logout } = useAuth();
 
   if (!user) return null;
@@ -55,6 +55,32 @@ export default function UserBar({ onPurchase, onStats, onProfile }) {
           </span>
           <span className="text-gray-400 text-sm font-medium">pts</span>
         </div>
+
+        {/* Amigos */}
+        <motion.button
+          onClick={() => { playSound('click'); onFriends?.(); }}
+          whileHover={{ scale: 1.06, boxShadow: '0 0 18px rgba(255,215,0,0.4)' }}
+          whileTap={{ scale: 0.93 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+          className="relative flex items-center gap-1.5 text-black text-xs font-bold px-3 py-1.5 rounded-lg"
+          style={{
+            background: 'linear-gradient(135deg, #78350F, #B45309)',
+            boxShadow: '0 0 8px rgba(180,83,9,0.3)',
+            fontFamily: "'Cinzel', serif",
+            letterSpacing: 0.5,
+          }}
+        >
+          <span>👥</span>
+          <span className="text-yellow-100">Amigos</span>
+          {friendsBadge > 0 && (
+            <span
+              className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-white font-black"
+              style={{ fontSize: 10, background: '#EF4444', boxShadow: '0 0 8px rgba(239,68,68,0.6)' }}
+            >
+              {friendsBadge > 9 ? '9+' : friendsBadge}
+            </span>
+          )}
+        </motion.button>
 
         {/* Stats */}
         <motion.button

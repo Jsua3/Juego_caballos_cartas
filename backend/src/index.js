@@ -9,7 +9,10 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const roomsRoutes = require('./routes/rooms');
 const purchasesRoutes = require('./routes/purchases');
+const createFriendsRouter = require('./routes/friends');
+const messagesRoutes = require('./routes/messages');
 const registerGameEvents = require('./socket/gameEvents');
+const state = require('./socket/state');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +38,9 @@ app.use('/api/rooms', roomsRoutes);
 app.use('/api/purchases', purchasesRoutes);
 
 registerGameEvents(io);
+
+app.use('/api/friends', createFriendsRouter(io, state));
+app.use('/api/messages', messagesRoutes);
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
