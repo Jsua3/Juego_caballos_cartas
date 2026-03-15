@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
 import AvatarCircle from '../Shared/AvatarCircle';
-import DirectChat from './DirectChat';
 import socket from '../../socket';
 
 const TAB_STYLE = (active) => ({
@@ -21,10 +20,9 @@ const TAB_STYLE = (active) => ({
   transition: 'all 0.2s',
 });
 
-export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, initialChatTarget, initialTab = 'friends' }) {
+export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, onOpenFloatingChat, initialTab = 'friends' }) {
   const { token, user } = useAuth();
   const [tab, setTab] = useState('friends');
-  const [chatTarget, setChatTarget] = useState(null);
 
   const [friends, setFriends]         = useState([]);
   const [requests, setRequests]       = useState([]);
@@ -56,7 +54,6 @@ export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, in
     if (isOpen) {
       loadAll();
       setTab(initialTab || 'friends');
-      setChatTarget(initialChatTarget || null);
     }
   }, [isOpen, loadAll]); // eslint-disable-line
 
@@ -159,24 +156,17 @@ export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, in
           className="text-yellow-400 font-black text-base"
           style={{ fontFamily: "'Cinzel', serif", letterSpacing: 1 }}
         >
-          {chatTarget ? 'CHAT' : 'AMIGOS'}
+          AMIGOS
         </span>
         <button
-          onClick={() => { playSound('click'); chatTarget ? setChatTarget(null) : onClose(); }}
+          onClick={() => { playSound('click'); onClose(); }}
           className="text-gray-400 hover:text-white text-lg transition"
         >
-          {chatTarget ? '←' : '✕'}
+          ✕
         </button>
       </div>
 
-      {chatTarget ? (
-        <DirectChat
-          friend={chatTarget}
-          onBack={() => setChatTarget(null)}
-          roomCode={roomCode}
-        />
-      ) : (
-        <>
+      <>
           {/* Tabs */}
           <div className="flex gap-1 p-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <button style={TAB_STYLE(tab === 'friends')} onClick={() => { playSound('click'); setTab('friends'); }}>
@@ -230,7 +220,7 @@ export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, in
                           </div>
                           <div className="flex gap-1">
                             <button
-                              onClick={() => { playSound('click'); setChatTarget(f); }}
+                              onClick={() => { playSound('click'); onOpenFloatingChat?.(f); }}
                               className="text-xs px-2 py-1 rounded-lg transition"
                               style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', color: '#FFD700' }}
                               title="Enviar mensaje"
@@ -384,7 +374,6 @@ export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, in
             </AnimatePresence>
           </div>
         </>
-      )}
     </motion.div>
   );
 }

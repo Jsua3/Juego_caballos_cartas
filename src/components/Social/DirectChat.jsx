@@ -5,7 +5,7 @@ import { playSound } from '../../utils/sound';
 import AvatarCircle from '../Shared/AvatarCircle';
 import socket from '../../socket';
 
-export default function DirectChat({ friend, onBack, roomCode }) {
+export default function DirectChat({ friend, onBack, roomCode, hideHeader = false }) {
   const { token, user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -68,7 +68,7 @@ export default function DirectChat({ friend, onBack, roomCode }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-2 p-3 border-b border-yellow-600/20">
+      {!hideHeader && <div className="flex items-center gap-2 p-3 border-b border-yellow-600/20">
         <button
           onClick={onBack}
           className="text-gray-400 hover:text-white text-lg leading-none px-1 transition"
@@ -94,7 +94,7 @@ export default function DirectChat({ friend, onBack, roomCode }) {
             🎮 Invitar
           </button>
         )}
-      </div>
+      </div>}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">

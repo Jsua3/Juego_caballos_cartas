@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 import { playSound } from './utils/sound';
 import socket from './socket';
@@ -16,6 +16,8 @@ import ProfileModal from './components/Shared/ProfileModal';
 import PublicProfileModal from './components/Shared/PublicProfileModal';
 import AvatarCircle from './components/Shared/AvatarCircle';
 import FriendsPanel from './components/Social/FriendsPanel';
+import FloatingChat from './components/Social/FloatingChat';
+import InviteFriendsModal from './components/Social/InviteFriendsModal';
 import GameInviteNotification from './components/Social/GameInviteNotification';
 
 /*
@@ -57,8 +59,9 @@ export default function CarreraDeCaballos() {
   const [showFriends,    setShowFriends]    = useState(false);
   const [friendsBadge,   setFriendsBadge]   = useState(0);
   const [gameInvites,    setGameInvites]    = useState([]);
-  const [friendsPanelMsg, setFriendsPanelMsg] = useState(null); // pre-open chat with this friend
   const [friendsInitialTab, setFriendsInitialTab] = useState('friends');
+  const [floatingChat, setFloatingChat] = useState(null);
+  const [showInviteFriends, setShowInviteFriends] = useState(false);
 
   // Connect socket and authenticate for online presence
   useEffect(() => {
@@ -415,10 +418,7 @@ export default function CarreraDeCaballos() {
             setPublicProfileRoomCode(player.roomCode || null);
           }}
           onOpenChat={(friend) => {
-            setFriendsPanelMsg(friend);
-            setFriendsInitialTab('friends');
-            setShowFriends(true);
-            setFriendsBadge(0);
+            setFloatingChat(friend);
           }}
           onOpenSearch={() => {
             setFriendsInitialTab('search');
@@ -440,6 +440,7 @@ export default function CarreraDeCaballos() {
           onSendMessage={handleSendMessage}
           onShowQR={() => setShowQR(true)}
           onViewProfile={(id) => setPublicProfileId(id)}
+          onInviteFriends={() => setShowInviteFriends(true)}
         />
       )}
 
@@ -509,9 +510,7 @@ export default function CarreraDeCaballos() {
           onSendMessage={(friend) => {
             setPublicProfileId(null);
             setPublicProfileRoomCode(null);
-            setFriendsPanelMsg(friend);
-            setShowFriends(true);
-            setFriendsBadge(0);
+            setFloatingChat(friend);
           }}
         />
       )}
@@ -519,19 +518,43 @@ export default function CarreraDeCaballos() {
       {/* Friends panel (slide-in drawer) */}
       <FriendsPanel
         isOpen={showFriends}
-        onClose={() => { setShowFriends(false); setFriendsPanelMsg(null); setFriendsInitialTab('friends'); }}
+        onClose={() => { setShowFriends(false); setFriendsInitialTab('friends'); }}
         roomCode={roomCode}
         onJoinRoom={handleJoinRoom}
-        initialChatTarget={friendsPanelMsg}
+        onOpenFloatingChat={(friend) => { setFloatingChat(friend); setShowFriends(false); }}
         initialTab={friendsInitialTab}
       />
       {/* Click-away overlay when friends panel is open */}
       {showFriends && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => { setShowFriends(false); setFriendsPanelMsg(null); }}
+          onClick={() => { setShowFriends(false); setFriendsInitialTab('friends'); }}
         />
       )}
+
+      {/* Floating chat */}
+      <AnimatePresence>
+        {floatingChat && (
+          <FloatingChat
+            key={floatingChat.id}
+            friend={floatingChat}
+            onClose={() => setFloatingChat(null)}
+            roomCode={roomCode}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Invite friends modal */}
+      <AnimatePresence>
+        {showInviteFriends && roomCode && (
+          <InviteFriendsModal
+            onClose={() => setShowInviteFriends(false)}
+            roomCode={roomCode}
+            token={token}
+            onlinePlayers={onlinePlayers}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Game invite toasts */}
       <GameInviteNotification
@@ -544,7 +567,7 @@ export default function CarreraDeCaballos() {
 }
 
 /* ── Waiting Room ── */
-function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, chatMessages = [], onSendMessage, onShowQR, onViewProfile }) {
+function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, chatMessages = [], onSendMessage, onShowQR, onViewProfile, onInviteFriends }) {
   const { players = [], status } = roomState;
   const { user } = useAuth();
   const canStart = players.length >= 2 && status === 'waiting';
@@ -578,17 +601,45 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
           </p>
           <div className="inline-flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-6 py-3">
             <span className="font-mono font-black text-yellow-400 text-3xl tracking-widest">{roomCode}</span>
-            <motion.button
-              onClick={onShowQR}
-              title="Ver código QR"
-              whileHover={{ scale: 1.2, color: '#FFD700', filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.6))' }}
-              whileTap={{ scale: 0.9 }}
-              className="text-yellow-500 text-xl"
-            >
-              ▣
-            </motion.button>
           </div>
           <p className="text-gray-500 text-xs mt-2">Comparte este código con tus amigos</p>
+          {/* Botones de invitar */}
+          <div className="flex gap-3 justify-center mt-3">
+            <motion.button
+              onClick={() => { playSound('click'); onInviteFriends?.(); }}
+              whileHover={{ scale: 1.03, boxShadow: '0 0 28px rgba(212,168,53,0.5)' }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+              className="flex items-center gap-2 font-bold rounded-xl"
+              style={{
+                background: 'linear-gradient(135deg, #8B6400, #C09020, #D4A835)',
+                color: '#000',
+                padding: '12px 20px',
+                fontSize: 14,
+                fontFamily: "'Cinzel', serif",
+                boxShadow: '0 0 12px rgba(180,134,20,0.3)',
+              }}
+            >
+              👥 Invitar amigos
+            </motion.button>
+            <motion.button
+              onClick={() => { playSound('click'); onShowQR?.(); }}
+              whileHover={{ scale: 1.03, boxShadow: '0 0 20px rgba(180,134,20,0.3)' }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+              className="flex items-center gap-2 font-bold rounded-xl"
+              style={{
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(180,134,20,0.3)',
+                color: '#FFD700',
+                padding: '12px 20px',
+                fontSize: 14,
+                fontFamily: "'Cinzel', serif",
+              }}
+            >
+              📱 QR para invitar
+            </motion.button>
+          </div>
         </div>
 
         {/* Players */}
