@@ -18,10 +18,10 @@ const CASINO_BG = {
 function Separator({ label }) {
   return (
     <div className="flex flex-col items-center gap-1 self-center shrink-0 mx-1">
-      <div style={{ width: 1, height: 40, background: 'rgba(180,134,20,0.18)' }} />
+      <div style={{ width: 1, height: 52, background: 'rgba(180,134,20,0.18)' }} />
       <span
         style={{
-          fontSize: 8,
+          fontSize: 9,
           color: 'rgba(180,134,20,0.45)',
           letterSpacing: 1,
           fontFamily: "'Cinzel', serif",
@@ -62,24 +62,24 @@ function ConnAvatar({ player, isFriend, isOnline = true, onClick }) {
             padding: 2,
           }}
         >
-          <AvatarCircle src={player.avatar_url} username={player.username} size={42} />
+          <AvatarCircle src={player.avatar_url} username={player.username} size={54} />
         </div>
         <span
           style={{
             position: 'absolute',
             bottom: 2,
             right: 2,
-            width: 9,
-            height: 9,
+            width: 12,
+            height: 12,
             borderRadius: '50%',
             background: dotColor,
-            border: '1.5px solid #072318',
+            border: '2px solid #072318',
           }}
         />
       </div>
       <span
         className="text-center leading-tight truncate"
-        style={{ fontSize: 9, maxWidth: 56, color: nameColor }}
+        style={{ fontSize: 11, maxWidth: 68, color: nameColor }}
       >
         {player.display_name || player.username}
       </span>
@@ -128,8 +128,8 @@ function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch
       }}
     >
       <div
-        className="flex items-start gap-3 overflow-x-auto"
-        style={{ padding: '14px 24px 12px', scrollbarWidth: 'none' }}
+        className="flex items-start gap-4 overflow-x-auto"
+        style={{ padding: '20px 28px 18px', scrollbarWidth: 'none' }}
       >
         {/* ── Mi perfil ── */}
         <motion.div
@@ -137,18 +137,18 @@ function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch
           whileHover={{ scale: 1.02, boxShadow: '0 0 18px rgba(180,134,20,0.2)' }}
           whileTap={{ scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 380, damping: 18 }}
-          className="flex items-center gap-2.5 shrink-0 cursor-pointer rounded-xl"
+          className="flex items-center gap-3.5 shrink-0 cursor-pointer rounded-xl"
           style={{
             background: 'rgba(180,134,20,0.07)',
             border: '1px solid rgba(180,134,20,0.2)',
-            padding: '8px 14px',
+            padding: '12px 18px',
           }}
         >
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <AvatarCircle
               src={user?.avatar_url}
               username={user?.username}
-              size={44}
+              size={56}
               style={{
                 border: '2px solid rgba(255,215,0,0.55)',
                 boxShadow: '0 0 10px rgba(180,134,20,0.2)',
@@ -159,8 +159,8 @@ function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch
                 position: 'absolute',
                 bottom: 1,
                 right: 1,
-                width: 10,
-                height: 10,
+                width: 13,
+                height: 13,
                 borderRadius: '50%',
                 background: '#22C55E',
                 border: '1.5px solid #040c06',
@@ -170,12 +170,12 @@ function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch
           <div>
             <p
               className="text-white font-bold"
-              style={{ fontSize: 12, lineHeight: 1.35 }}
+              style={{ fontSize: 15, lineHeight: 1.35 }}
             >
               {user?.display_name || user?.username}
             </p>
             {stats ? (
-              <p style={{ fontSize: 10, color: 'rgba(200,200,200,0.65)', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 12, color: 'rgba(200,200,200,0.65)', lineHeight: 1.5 }}>
                 {stats.games_played} jugadas · {stats.games_won} ganadas ·{' '}
                 <span
                   style={{
@@ -186,15 +186,15 @@ function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch
                 </span>
               </p>
             ) : (
-              <p style={{ fontSize: 10, color: 'rgba(200,200,200,0.4)' }}>Cargando…</p>
+              <p style={{ fontSize: 12, color: 'rgba(200,200,200,0.4)' }}>Cargando…</p>
             )}
             <p
               onClick={(e) => { e.stopPropagation(); playSound('click'); onProfile?.(); }}
               style={{
-                fontSize: 8,
+                fontSize: 10,
                 color: 'rgba(180,134,20,0.6)',
                 cursor: 'pointer',
-                marginTop: 2,
+                marginTop: 3,
                 letterSpacing: 0.5,
               }}
             >
@@ -260,8 +260,8 @@ function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch
             whileTap={{ scale: 0.92 }}
             transition={{ type: 'spring', stiffness: 420, damping: 18 }}
             style={{
-              width: 48,
-              height: 48,
+              width: 60,
+              height: 60,
               borderRadius: '50%',
               border: '2px dashed rgba(180,134,20,0.5)',
               background: 'transparent',
@@ -269,13 +269,13 @@ function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch
               alignItems: 'center',
               justifyContent: 'center',
               color: 'rgba(180,134,20,0.75)',
-              fontSize: 24,
+              fontSize: 28,
               cursor: 'pointer',
             }}
           >
             +
           </motion.button>
-          <span style={{ fontSize: 9, color: 'rgba(180,134,20,0.5)', letterSpacing: 0.5 }}>
+          <span style={{ fontSize: 11, color: 'rgba(180,134,20,0.5)', letterSpacing: 0.5 }}>
             Buscar
           </span>
         </div>
