@@ -58,6 +58,7 @@ export default function CarreraDeCaballos() {
   const [friendsBadge,   setFriendsBadge]   = useState(0);
   const [gameInvites,    setGameInvites]    = useState([]);
   const [friendsPanelMsg, setFriendsPanelMsg] = useState(null); // pre-open chat with this friend
+  const [friendsInitialTab, setFriendsInitialTab] = useState('friends');
 
   // Connect socket and authenticate for online presence
   useEffect(() => {
@@ -387,10 +388,7 @@ export default function CarreraDeCaballos() {
     <>
       <UserBar
         onPurchase={() => setShowPurchase(true)}
-        onStats={() => setShowStats(true)}
         onProfile={() => setShowProfile(true)}
-        onFriends={() => { setShowFriends(true); setFriendsBadge(0); }}
-        friendsBadge={friendsBadge}
       />
 
       {/* Socket error toast */}
@@ -418,9 +416,16 @@ export default function CarreraDeCaballos() {
           }}
           onOpenChat={(friend) => {
             setFriendsPanelMsg(friend);
+            setFriendsInitialTab('friends');
             setShowFriends(true);
             setFriendsBadge(0);
           }}
+          onOpenSearch={() => {
+            setFriendsInitialTab('search');
+            setShowFriends(true);
+            setFriendsBadge(0);
+          }}
+          onProfile={() => setShowProfile(true)}
         />
       )}
 
@@ -514,10 +519,11 @@ export default function CarreraDeCaballos() {
       {/* Friends panel (slide-in drawer) */}
       <FriendsPanel
         isOpen={showFriends}
-        onClose={() => { setShowFriends(false); setFriendsPanelMsg(null); }}
+        onClose={() => { setShowFriends(false); setFriendsPanelMsg(null); setFriendsInitialTab('friends'); }}
         roomCode={roomCode}
         onJoinRoom={handleJoinRoom}
         initialChatTarget={friendsPanelMsg}
+        initialTab={friendsInitialTab}
       />
       {/* Click-away overlay when friends panel is open */}
       {showFriends && (

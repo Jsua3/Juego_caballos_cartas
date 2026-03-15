@@ -5,7 +5,7 @@ import { useAuth, API_URL } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
 import AvatarCircle from '../Shared/AvatarCircle';
 
-// ── fondo casino: patrón de rombos verde oscuro + líneas doradas ──────────────
+// ── Fondo casino ───────────────────────────────────────────────────────────────
 const CASINO_BG = {
   backgroundColor: '#072318',
   backgroundImage: `
@@ -14,91 +14,378 @@ const CASINO_BG = {
   `,
 };
 
-function StatsBar({ token }) {
+// ── Separador vertical ─────────────────────────────────────────────────────────
+function Separator({ label }) {
+  return (
+    <div className="flex flex-col items-center gap-1 self-center shrink-0 mx-1">
+      <div style={{ width: 1, height: 40, background: 'rgba(180,134,20,0.18)' }} />
+      <span
+        style={{
+          fontSize: 8,
+          color: 'rgba(180,134,20,0.45)',
+          letterSpacing: 1,
+          fontFamily: "'Cinzel', serif",
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ── Avatar de conexión (usuario online) ───────────────────────────────────────
+function ConnAvatar({ player, isFriend, isOnline = true, onClick }) {
+  const borderColor = isFriend
+    ? 'rgba(180,134,20,0.55)'
+    : 'rgba(100,100,100,0.45)';
+  const bgColor = isFriend ? 'rgba(180,134,20,0.12)' : 'rgba(255,255,255,0.06)';
+  const nameColor = isFriend ? 'rgba(255,215,0,0.85)' : 'rgba(200,200,200,0.75)';
+  const dotColor = isOnline ? '#22C55E' : '#6B7280';
+
+  return (
+    <motion.div
+      onClick={onClick}
+      whileHover={{ scale: 1.1, y: -3 }}
+      whileTap={{ scale: 0.93 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+      className="flex flex-col items-center gap-1 shrink-0 cursor-pointer"
+      style={{ opacity: isOnline ? 1 : 0.5 }}
+    >
+      <div style={{ position: 'relative' }}>
+        <div
+          style={{
+            border: `2px solid ${borderColor}`,
+            background: bgColor,
+            borderRadius: '50%',
+            padding: 2,
+          }}
+        >
+          <AvatarCircle src={player.avatar_url} username={player.username} size={42} />
+        </div>
+        <span
+          style={{
+            position: 'absolute',
+            bottom: 2,
+            right: 2,
+            width: 9,
+            height: 9,
+            borderRadius: '50%',
+            background: dotColor,
+            border: '1.5px solid #072318',
+          }}
+        />
+      </div>
+      <span
+        className="text-center leading-tight truncate"
+        style={{ fontSize: 9, maxWidth: 56, color: nameColor }}
+      >
+        {player.display_name || player.username}
+      </span>
+    </motion.div>
+  );
+}
+
+// ── Barra de conexiones ────────────────────────────────────────────────────────
+function ConnectionBar({ token, user, onlinePlayers, onViewProfile, onOpenSearch, onProfile }) {
   const [stats, setStats] = useState(null);
+  const [friends, setFriends] = useState([]);
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/api/users/stats`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setStats(res.data))
-      .catch(() => {});
+    if (!token) return;
+    const h = { Authorization: `Bearer ${token}` };
+    axios.get(`${API_URL}/api/users/stats`, { headers: h }).then((r) => setStats(r.data)).catch(() => {});
+    axios.get(`${API_URL}/api/friends`, { headers: h }).then((r) => setFriends(r.data)).catch(() => {});
   }, [token]);
 
-  if (!stats) return null;
+  const onlineIds = new Set(onlinePlayers.map((p) => p.userId));
+  const friendIds = new Set(friends.map((f) => f.id));
+
+  // Amigos online primero, offline después
+  const onlineFriends = friends
+    .filter((f) => onlineIds.has(f.id))
+    .map((f) => {
+      const playerData = onlinePlayers.find((p) => p.userId === f.id);
+      return { ...f, userId: f.id, roomCode: playerData?.roomCode || null };
+    });
+  const offlineFriends = friends.filter((f) => !onlineIds.has(f.id));
+
+  // Otros online (no amigos, no yo)
+  const otherOnline = onlinePlayers.filter(
+    (p) => !friendIds.has(p.userId) && p.userId !== user?.id
+  );
 
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex items-center gap-6 rounded-xl px-5 py-3 mb-6 flex-wrap"
+      transition={{ duration: 0.35 }}
+      className="sticky top-16 z-30"
       style={{
-        background: 'linear-gradient(90deg, #8B6400, #C09020, #D4A835, #C09020, #8B6400)',
-        boxShadow: '0 2px 20px rgba(180,134,20,0.35)',
+        background: 'rgba(4,12,6,0.97)',
+        borderBottom: '1px solid rgba(180,134,20,0.12)',
       }}
     >
-      <span className="text-black/70 text-xs font-black tracking-widest" style={{ fontFamily: "'Cinzel', serif" }}>
-        TUS STATS
-      </span>
-      <Stat label="Jugadas"    value={stats.games_played} />
-      <Stat label="Ganadas"    value={stats.games_won} />
-      <Stat label="Victoria"   value={`${stats.win_rate}%`} highlight={stats.win_rate >= 50} />
-      <Stat label="Pts ganados" value={stats.points_won.toLocaleString()} />
+      <div
+        className="flex items-start gap-3 overflow-x-auto"
+        style={{ padding: '14px 24px 12px', scrollbarWidth: 'none' }}
+      >
+        {/* ── Mi perfil ── */}
+        <motion.div
+          onClick={() => { playSound('click'); onProfile?.(); }}
+          whileHover={{ scale: 1.02, boxShadow: '0 0 18px rgba(180,134,20,0.2)' }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+          className="flex items-center gap-2.5 shrink-0 cursor-pointer rounded-xl"
+          style={{
+            background: 'rgba(180,134,20,0.07)',
+            border: '1px solid rgba(180,134,20,0.2)',
+            padding: '8px 14px',
+          }}
+        >
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <AvatarCircle
+              src={user?.avatar_url}
+              username={user?.username}
+              size={44}
+              style={{
+                border: '2px solid rgba(255,215,0,0.55)',
+                boxShadow: '0 0 10px rgba(180,134,20,0.2)',
+              }}
+            />
+            <span
+              style={{
+                position: 'absolute',
+                bottom: 1,
+                right: 1,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: '#22C55E',
+                border: '1.5px solid #040c06',
+              }}
+            />
+          </div>
+          <div>
+            <p
+              className="text-white font-bold"
+              style={{ fontSize: 12, lineHeight: 1.35 }}
+            >
+              {user?.display_name || user?.username}
+            </p>
+            {stats ? (
+              <p style={{ fontSize: 10, color: 'rgba(200,200,200,0.65)', lineHeight: 1.5 }}>
+                {stats.games_played} jugadas · {stats.games_won} ganadas ·{' '}
+                <span
+                  style={{
+                    color: stats.win_rate >= 50 ? '#34D399' : 'rgba(200,200,200,0.65)',
+                  }}
+                >
+                  {stats.win_rate}% win
+                </span>
+              </p>
+            ) : (
+              <p style={{ fontSize: 10, color: 'rgba(200,200,200,0.4)' }}>Cargando…</p>
+            )}
+            <p
+              onClick={(e) => { e.stopPropagation(); playSound('click'); onProfile?.(); }}
+              style={{
+                fontSize: 8,
+                color: 'rgba(180,134,20,0.6)',
+                cursor: 'pointer',
+                marginTop: 2,
+                letterSpacing: 0.5,
+              }}
+            >
+              EDITAR PERFIL ✎
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ── Sección Amigos ── */}
+        <Separator label="Amigos" />
+
+        {onlineFriends.map((f) => (
+          <ConnAvatar
+            key={f.id}
+            player={f}
+            isFriend
+            isOnline
+            onClick={() => { playSound('click'); onViewProfile?.(f); }}
+          />
+        ))}
+        {offlineFriends.map((f) => (
+          <ConnAvatar
+            key={f.id}
+            player={{ ...f, userId: f.id }}
+            isFriend
+            isOnline={false}
+            onClick={() => {
+              playSound('click');
+              onViewProfile?.({ userId: f.id, roomCode: null, username: f.username, avatar_url: f.avatar_url });
+            }}
+          />
+        ))}
+        {friends.length === 0 && (
+          <span
+            className="self-center"
+            style={{ fontSize: 10, color: 'rgba(180,134,20,0.35)', whiteSpace: 'nowrap' }}
+          >
+            Sin amigos aún
+          </span>
+        )}
+
+        {/* ── Sección En línea ── */}
+        {otherOnline.length > 0 && (
+          <>
+            <Separator label="En línea" />
+            {otherOnline.map((p) => (
+              <ConnAvatar
+                key={p.userId}
+                player={p}
+                isFriend={false}
+                isOnline
+                onClick={() => { playSound('click'); onViewProfile?.(p); }}
+              />
+            ))}
+          </>
+        )}
+
+        {/* ── Botón Buscar ── */}
+        <div className="flex flex-col items-center gap-1 shrink-0 self-center ml-1">
+          <motion.button
+            onClick={() => { playSound('click'); onOpenSearch?.(); }}
+            whileHover={{ scale: 1.1, boxShadow: '0 0 14px rgba(180,134,20,0.3)' }}
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              border: '2px dashed rgba(180,134,20,0.5)',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'rgba(180,134,20,0.75)',
+              fontSize: 24,
+              cursor: 'pointer',
+            }}
+          >
+            +
+          </motion.button>
+          <span style={{ fontSize: 9, color: 'rgba(180,134,20,0.5)', letterSpacing: 0.5 }}>
+            Buscar
+          </span>
+        </div>
+      </div>
     </motion.div>
   );
 }
 
-function Stat({ label, value, highlight }) {
-  return (
-    <div className="flex flex-col items-center min-w-[52px]">
-      <span
-        className="font-black text-base leading-tight"
-        style={{ color: highlight ? '#14532D' : '#000', textShadow: '0 1px 0 rgba(255,255,255,0.2)' }}
-      >
-        {value}
-      </span>
-      <span className="text-black/55 text-xs leading-tight">{label}</span>
-    </div>
-  );
-}
-
-// ── OnlineUserAvatar ──────────────────────────────────────────────────────────
-function OnlineUserAvatar({ player, isFriend, isSelf, onViewProfile }) {
-  const border = isFriend
-    ? '2px solid rgba(255,215,0,0.65)'
-    : '2px solid rgba(255,255,255,0.15)';
-
-  const handleClick = () => {
-    if (isSelf) return;
-    onViewProfile(player);
-  };
+// ── Tarjeta de sala ────────────────────────────────────────────────────────────
+function RoomCard({ room, onJoin }) {
+  const slots = Array.from({ length: room.max_players || 4 }, (_, i) => i < room.player_count);
 
   return (
     <motion.div
-      onClick={handleClick}
-      whileHover={!isSelf ? { scale: 1.12, y: -4 } : {}}
-      whileTap={!isSelf ? { scale: 0.94 } : {}}
-      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-      className="flex flex-col items-center gap-1 shrink-0"
-      style={{ cursor: isSelf ? 'default' : 'pointer' }}
+      variants={{
+        hidden: { opacity: 0, y: 16 },
+        show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 280, damping: 22 } },
+      }}
+      whileHover={{
+        borderColor: 'rgba(180,134,20,0.45)',
+        background: 'rgba(180,134,20,0.04)',
+        boxShadow: '0 0 22px rgba(180,134,20,0.14)',
+        y: -2,
+      }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => { playSound('click'); onJoin(room.room_code); }}
+      className="flex flex-col gap-3 cursor-pointer rounded-2xl"
+      style={{
+        padding: 16,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(180,134,20,0.15)',
+      }}
     >
-      <div style={{ border, borderRadius: '50%', padding: 2 }}>
-        <AvatarCircle src={player.avatar_url} username={player.username} size={44} />
+      {/* Código + modo */}
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className="font-mono font-black"
+          style={{ fontSize: 16, letterSpacing: 2, color: '#FFD700', textShadow: '0 0 10px rgba(255,215,0,0.3)' }}
+        >
+          {room.room_code}
+        </span>
+        <span
+          className="text-xs px-2 py-0.5 rounded-full"
+          style={
+            room.game_mode === 'blackjack'
+              ? { background: 'rgba(37,99,235,0.15)', color: '#93C5FD', border: '1px solid rgba(37,99,235,0.25)' }
+              : { background: 'rgba(180,134,20,0.13)', color: '#FDE68A', border: '1px solid rgba(180,134,20,0.25)' }
+          }
+        >
+          {room.game_mode === 'blackjack' ? '🃏 Blackjack' : '🏇 Caballos'}
+        </span>
       </div>
-      <span
-        className="text-xs text-center leading-tight max-w-[56px] truncate"
-        style={{ color: isFriend ? '#FFD700' : 'rgba(255,255,255,0.7)' }}
+
+      {/* Estado + jugadores + slots */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs bg-green-900/40 text-green-300 border border-green-700/30 px-2 py-0.5 rounded-full">
+            Esperando
+          </span>
+          <span className="text-gray-400 text-xs">
+            {room.player_count}/{room.max_players} jugadores
+          </span>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          {slots.map((occupied, i) => (
+            <div
+              key={i}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: occupied ? 'rgba(180,134,20,0.28)' : 'rgba(255,255,255,0.07)',
+                border: occupied
+                  ? '1.5px solid rgba(180,134,20,0.5)'
+                  : '1.5px dashed rgba(100,100,100,0.35)',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Botón unirse */}
+      <motion.button
+        onClick={(e) => { e.stopPropagation(); playSound('click'); onJoin(room.room_code); }}
+        whileHover={{ background: 'rgba(180,134,20,0.12)', boxShadow: '0 0 16px rgba(180,134,20,0.2)' }}
+        whileTap={{ scale: 0.96 }}
+        className="w-full py-2 rounded-xl text-xs font-bold"
+        style={{
+          background: 'transparent',
+          border: '1px solid rgba(180,134,20,0.35)',
+          color: 'rgba(255,215,0,0.85)',
+          fontFamily: "'Cinzel', serif",
+          letterSpacing: 0.5,
+        }}
       >
-        {player.username}
-      </span>
-      {isSelf && (
-        <span className="text-green-400" style={{ fontSize: 8, marginTop: -2 }}>tú</span>
-      )}
+        Unirse a la sala
+      </motion.button>
     </motion.div>
   );
 }
 
-export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfile, onOpenChat }) {
+// ── LobbyPage ──────────────────────────────────────────────────────────────────
+export default function LobbyPage({
+  onJoinRoom,
+  onlinePlayers = [],
+  onViewProfile,
+  onOpenChat,
+  onOpenSearch,
+  onProfile,
+}) {
   const { token, user } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -107,15 +394,6 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
   const [error, setError] = useState('');
   const [showModeModal, setShowModeModal] = useState(false);
   const [selectedMode, setSelectedMode] = useState('caballos');
-  const [friendIds, setFriendIds] = useState(new Set());
-
-  useEffect(() => {
-    if (!token) return;
-    axios
-      .get(`${API_URL}/api/friends`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setFriendIds(new Set(res.data.map((f) => f.id))))
-      .catch(() => {});
-  }, [token]);
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -141,9 +419,11 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
     setError('');
     setShowModeModal(false);
     try {
-      const res = await axios.post(`${API_URL}/api/rooms`, { gameMode }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.post(
+        `${API_URL}/api/rooms`,
+        { gameMode },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       onJoinRoom(res.data.room_code);
     } catch (err) {
       setError(err.response?.data?.error || 'Error al crear sala');
@@ -159,65 +439,80 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
   };
 
   return (
-    <div className="min-h-screen pt-14 pb-12 px-4" style={CASINO_BG}>
-      <div className="max-w-2xl mx-auto pt-6">
+    <div className="min-h-screen pt-16" style={CASINO_BG}>
 
-        {/* Título */}
-        <motion.h2
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-white font-bold text-3xl mb-5"
-          style={{ fontFamily: "'Cinzel', serif", textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
-        >
-          Salas disponibles
-        </motion.h2>
+      {/* ── Barra de conexiones ── */}
+      <ConnectionBar
+        token={token}
+        user={user}
+        onlinePlayers={onlinePlayers}
+        onViewProfile={onViewProfile}
+        onOpenSearch={onOpenSearch}
+        onProfile={onProfile}
+      />
 
-        <StatsBar token={token} />
+      {/* ── Contenido principal ── */}
+      <div className="px-4 sm:px-6 py-5 max-w-screen-xl mx-auto">
 
-        {/* Acciones */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <motion.button
-            onClick={() => { playSound('click'); setShowModeModal(true); }}
-            disabled={creating}
-            whileHover={!creating ? { scale: 1.02, boxShadow: '0 0 32px rgba(212,168,53,0.5)' } : {}}
-            whileTap={!creating ? { scale: 0.98 } : {}}
-            transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-            className="flex-1 disabled:opacity-50 font-bold py-3 rounded-xl text-base"
+        {/* Cabecera: título + acciones */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <motion.h2
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-white font-black"
             style={{
-              background: 'linear-gradient(90deg, #8B6400, #C09020, #D4A835, #C09020, #8B6400)',
-              color: '#000',
-              boxShadow: '0 0 18px rgba(180,134,20,0.35)',
-              fontFamily: "'Cinzel', serif",
+              fontSize: 18,
               letterSpacing: 1,
+              fontFamily: "'Cinzel', serif",
+              textShadow: '0 1px 10px rgba(0,0,0,0.5)',
             }}
           >
-            {creating ? 'Creando...' : '+ Crear nueva sala'}
-          </motion.button>
+            Salas disponibles
+          </motion.h2>
 
-          <div className="flex flex-1 gap-2">
+          <div className="flex items-center gap-2">
+            <motion.button
+              onClick={() => { playSound('click'); setShowModeModal(true); }}
+              disabled={creating}
+              whileHover={!creating ? { scale: 1.04, boxShadow: '0 0 24px rgba(212,168,53,0.5)' } : {}}
+              whileTap={!creating ? { scale: 0.96 } : {}}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+              className="disabled:opacity-50 font-bold py-2 px-4 rounded-xl text-sm"
+              style={{
+                background: 'linear-gradient(90deg, #8B6400, #C09020, #D4A835, #C09020, #8B6400)',
+                color: '#000',
+                boxShadow: '0 0 12px rgba(180,134,20,0.3)',
+                fontFamily: "'Cinzel', serif",
+              }}
+            >
+              {creating ? 'Creando…' : '+ Crear sala'}
+            </motion.button>
+
             <input
               type="text"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === 'Enter' && joinByCode()}
               maxLength={8}
-              placeholder="Código de sala"
-              className="flex-1 rounded-xl px-4 py-3 text-white font-medium text-base focus:outline-none focus:ring-2 focus:ring-yellow-600/40 transition"
+              placeholder="Código"
+              className="rounded-xl px-3 py-2 text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600/40 transition"
               style={{
                 background: 'rgba(0,0,0,0.45)',
                 border: '1px solid rgba(255,255,255,0.12)',
                 caretColor: '#FFD700',
+                width: 110,
               }}
             />
+
             <motion.button
               onClick={() => { playSound('click'); joinByCode(); }}
-              whileHover={{ scale: 1.04, boxShadow: '0 0 22px rgba(59,130,246,0.5)' }}
-              whileTap={{ scale: 0.96 }}
+              whileHover={{ scale: 1.05, boxShadow: '0 0 18px rgba(59,130,246,0.5)' }}
+              whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-              className="text-white font-bold px-6 rounded-xl text-base"
+              className="text-white font-bold px-4 py-2 rounded-xl text-sm"
               style={{
-                background: 'linear-gradient(135deg, #1E3A8A, #2563EB, #1E3A8A)',
-                boxShadow: '0 0 12px rgba(37,99,235,0.35)',
+                background: 'linear-gradient(135deg, #1E3A8A, #2563EB)',
+                boxShadow: '0 0 8px rgba(37,99,235,0.3)',
                 fontFamily: "'Cinzel', serif",
               }}
             >
@@ -226,6 +521,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
           </div>
         </div>
 
+        {/* Error */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -6 }}
@@ -236,7 +532,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
           </motion.div>
         )}
 
-        {/* Lista de salas */}
+        {/* Grid de salas / estado vacío */}
         {loading ? (
           <div className="text-gray-400 text-center py-12">Cargando salas...</div>
         ) : rooms.length === 0 ? (
@@ -246,84 +542,34 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
             transition={{ delay: 0.1 }}
             className="flex flex-col items-center justify-center py-20 gap-4"
           >
-            <span style={{ fontSize: 110, lineHeight: 1, filter: 'drop-shadow(0 0 24px rgba(180,134,20,0.4))' }}>
+            <span
+              style={{ fontSize: 110, lineHeight: 1, filter: 'drop-shadow(0 0 24px rgba(180,134,20,0.4))' }}
+            >
               🎰
             </span>
-            <p className="text-gray-300 text-base" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.6)' }}>
+            <p
+              className="text-gray-300 text-base"
+              style={{ textShadow: '0 1px 8px rgba(0,0,0,0.6)' }}
+            >
               No hay salas disponibles. ¡Crea una!
             </p>
           </motion.div>
         ) : (
           <motion.div
-            className="space-y-3"
+            className="grid gap-3"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
             initial="hidden"
             animate="show"
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
           >
             {rooms.map((room) => (
-              <motion.div
-                key={room.id}
-                variants={{
-                  hidden: { opacity: 0, y: 14 },
-                  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 280, damping: 24 } },
-                }}
-                whileHover={{
-                  scale: 1.015,
-                  boxShadow: '0 0 28px rgba(180,134,20,0.2), 0 4px 20px rgba(0,0,0,0.6)',
-                }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => { playSound('click'); onJoinRoom(room.room_code); }}
-                className="rounded-xl p-4 flex items-center justify-between cursor-pointer"
-                style={{
-                  background: 'rgba(0,0,0,0.5)',
-                  border: '1px solid rgba(180,134,20,0.2)',
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="font-mono font-black text-xl"
-                      style={{ color: '#FFD700', textShadow: '0 0 12px rgba(255,215,0,0.35)' }}
-                    >
-                      {room.room_code}
-                    </span>
-                    <span className="text-xs bg-green-900/50 text-green-300 border border-green-700/40 px-2 py-0.5 rounded-full">
-                      Esperando
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                      room.game_mode === 'blackjack'
-                        ? 'bg-blue-900/40 text-blue-300 border-blue-700/40'
-                        : 'bg-yellow-900/30 text-yellow-400 border-yellow-700/30'
-                    }`}>
-                      {room.game_mode === 'blackjack' ? '🃏 Blackjack' : '🏇 Caballos'}
-                    </span>
-                  </div>
-                  <p className="text-gray-400 text-sm mt-0.5">
-                    {room.player_count}/{room.max_players} jugadores
-                  </p>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.08, boxShadow: '0 0 20px rgba(212,168,53,0.5)' }}
-                  whileTap={{ scale: 0.93 }}
-                  className="font-bold px-5 py-2 rounded-xl text-sm"
-                  style={{
-                    background: 'linear-gradient(135deg, #8B6400, #C09020, #D4A835)',
-                    color: '#000',
-                    fontFamily: "'Cinzel', serif",
-                    boxShadow: '0 0 10px rgba(180,134,20,0.3)',
-                  }}
-                  onClick={(e) => { e.stopPropagation(); playSound('click'); onJoinRoom(room.room_code); }}
-                >
-                  Unirse
-                </motion.button>
-              </motion.div>
+              <RoomCard key={room.id} room={room} onJoin={onJoinRoom} />
             ))}
           </motion.div>
         )}
       </div>
 
-      {/* Modal modo de juego */}
+      {/* ── Modal modo de juego — sin cambios ── */}
       <AnimatePresence>
         {showModeModal && (
           <motion.div
@@ -349,7 +595,11 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
             >
               <h3
                 className="text-center text-yellow-400 font-bold text-lg mb-5"
-                style={{ fontFamily: "'Cinzel', serif", letterSpacing: 2, textShadow: '0 0 20px rgba(255,215,0,0.3)' }}
+                style={{
+                  fontFamily: "'Cinzel', serif",
+                  letterSpacing: 2,
+                  textShadow: '0 0 20px rgba(255,215,0,0.3)',
+                }}
               >
                 MODO DE JUEGO
               </h3>
@@ -387,7 +637,9 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.4 }}
                           className="ml-auto text-yellow-400 text-lg"
-                        >✓</motion.span>
+                        >
+                          ✓
+                        </motion.span>
                       )}
                     </AnimatePresence>
                   </motion.button>
@@ -422,33 +674,6 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Barra inferior */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-40"
-        style={{ background: 'rgba(4,12,6,0.97)', borderTop: '1px solid rgba(180,134,20,0.12)' }}
-      >
-        <div className="px-4 pt-2 pb-1 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" style={{ boxShadow: '0 0 6px #22C55E' }} />
-          <span className="text-green-400 text-xs font-bold">{onlinePlayers.length} en línea</span>
-        </div>
-        {onlinePlayers.length > 0 && (
-          <div
-            className="flex items-end gap-4 px-4 pb-3 overflow-x-auto"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {onlinePlayers.map((p) => (
-              <OnlineUserAvatar
-                key={p.userId}
-                player={p}
-                isFriend={friendIds.has(p.userId)}
-                isSelf={p.userId === user?.id}
-                onViewProfile={onViewProfile || (() => {})}
-              />
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

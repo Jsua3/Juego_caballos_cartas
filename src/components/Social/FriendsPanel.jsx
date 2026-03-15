@@ -21,7 +21,7 @@ const TAB_STYLE = (active) => ({
   transition: 'all 0.2s',
 });
 
-export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, initialChatTarget }) {
+export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, initialChatTarget, initialTab = 'friends' }) {
   const { token, user } = useAuth();
   const [tab, setTab] = useState('friends');
   const [chatTarget, setChatTarget] = useState(null);
@@ -55,7 +55,7 @@ export default function FriendsPanel({ isOpen, onClose, roomCode, onJoinRoom, in
   useEffect(() => {
     if (isOpen) {
       loadAll();
-      setTab('friends');
+      setTab(initialTab || 'friends');
       setChatTarget(initialChatTarget || null);
     }
   }, [isOpen, loadAll]); // eslint-disable-line
