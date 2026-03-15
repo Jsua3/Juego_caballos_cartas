@@ -12,6 +12,9 @@ import PurchaseModal from './components/Shared/PurchaseModal';
 import StatsModal from './components/Shared/StatsModal';
 import BlackjackGame from './components/Blackjack/BlackjackGame';
 import RoomCodeQR from './components/Shared/RoomCodeQR';
+import ProfileModal from './components/Shared/ProfileModal';
+import PublicProfileModal from './components/Shared/PublicProfileModal';
+import AvatarCircle from './components/Shared/AvatarCircle';
 
 /*
  * App phases:
@@ -40,12 +43,14 @@ export default function CarreraDeCaballos() {
   });
   const [results, setResults] = useState(null);
   const [winnerSuit, setWinnerSuit] = useState(null);
-  const [showPurchase, setShowPurchase] = useState(false);
-  const [showStats, setShowStats] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [socketError, setSocketError] = useState('');
-  const [notification, setNotification] = useState('');
-  const [showQR, setShowQR] = useState(false);
+  const [showPurchase,   setShowPurchase]   = useState(false);
+  const [showStats,      setShowStats]      = useState(false);
+  const [showProfile,    setShowProfile]    = useState(false);
+  const [publicProfileId, setPublicProfileId] = useState(null);
+  const [chatMessages,   setChatMessages]   = useState([]);
+  const [socketError,    setSocketError]    = useState('');
+  const [notification,   setNotification]   = useState('');
+  const [showQR,         setShowQR]         = useState(false);
 
   // Connect socket and authenticate for online presence
   useEffect(() => {
@@ -349,7 +354,11 @@ export default function CarreraDeCaballos() {
 
   return (
     <>
-      <UserBar onPurchase={() => setShowPurchase(true)} onStats={() => setShowStats(true)} />
+      <UserBar
+        onPurchase={() => setShowPurchase(true)}
+        onStats={() => setShowStats(true)}
+        onProfile={() => setShowProfile(true)}
+      />
 
       {/* Socket error toast */}
       {socketError && (
@@ -380,6 +389,7 @@ export default function CarreraDeCaballos() {
           chatMessages={chatMessages}
           onSendMessage={handleSendMessage}
           onShowQR={() => setShowQR(true)}
+          onViewProfile={(id) => setPublicProfileId(id)}
         />
       )}
 
@@ -404,6 +414,7 @@ export default function CarreraDeCaballos() {
           onSendMessage={handleSendMessage}
           roomCode={roomCode}
           onShowQR={() => setShowQR(true)}
+          onViewProfile={(id) => setPublicProfileId(id)}
         />
       )}
 
@@ -413,6 +424,7 @@ export default function CarreraDeCaballos() {
           winnerSuit={winnerSuit}
           onPlayAgain={handlePlayAgain}
           onLeaveLobby={handleLeaveRoom}
+          onViewProfile={(id) => setPublicProfileId(id)}
         />
       )}
 
@@ -433,12 +445,16 @@ export default function CarreraDeCaballos() {
       {showQR && roomCode && <RoomCodeQR roomCode={roomCode} onClose={() => setShowQR(false)} />}
       {showPurchase && <PurchaseModal onClose={() => setShowPurchase(false)} />}
       {showStats && <StatsModal onClose={() => setShowStats(false)} />}
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+      {publicProfileId && (
+        <PublicProfileModal userId={publicProfileId} onClose={() => setPublicProfileId(null)} />
+      )}}
     </>
   );
 }
 
 /* ── Waiting Room ── */
-function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, chatMessages = [], onSendMessage, onShowQR }) {
+function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, chatMessages = [], onSendMessage, onShowQR, onViewProfile }) {
   const { players = [], status } = roomState;
   const { user } = useAuth();
   const canStart = players.length >= 2 && status === 'waiting';
@@ -512,11 +528,17 @@ function WaitingRoom({ roomCode, roomState, isOwner, onStartBetting, onLeave, ch
                   boxShadow: isMe ? '0 0 16px rgba(255,215,0,0.08)' : 'none',
                 }}
               >
-                <div className="relative">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
-                    style={{ background: 'rgba(184,134,11,0.15)', border: `2px solid ${isMe ? '#FFD700' : 'rgba(184,134,11,0.3)'}`, color: '#FFD700' }}>
-                    {p.username.charAt(0).toUpperCase()}
-                  </div>
+                <div
+                  className="relative cursor-pointer"
+                  onClick={() => !isMe && onViewProfile?.(p.userId)}
+                  title={!isMe ? `Ver perfil de ${p.username}` : undefined}
+                >
+                  <AvatarCircle
+                    src={p.avatar_url}
+                    username={p.username}
+                    size={36}
+                    style={{ border: `2px solid ${isMe ? '#FFD700' : 'rgba(184,134,11,0.3)'}` }}
+                  />
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-900"
                     style={{ background: '#22C55E', boxShadow: '0 0 6px #22C55E' }} />
                 </div>

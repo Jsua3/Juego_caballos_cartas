@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
+import AvatarCircle from '../Shared/AvatarCircle';
 
 // ── fondo casino: patrón de rombos verde oscuro + líneas doradas ──────────────
 const CASINO_BG = {
@@ -318,7 +319,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
                     initial={{ opacity: 0, x: -12 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.08 }}
-                    onClick={() => setSelectedMode(mode.id)}
+                    onClick={() => { playSound('advance'); setSelectedMode(mode.id); }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="w-full flex items-center gap-4 p-4 rounded-xl"
@@ -389,7 +390,7 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [] }) {
             <span className="text-gray-600 text-xs">|</span>
             {onlinePlayers.map((p, i) => (
               <span key={p.userId} className="flex items-center gap-1.5 text-xs text-gray-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                <AvatarCircle src={p.avatar_url} username={p.username} size={16} />
                 {p.username}
                 {i < onlinePlayers.length - 1 && <span className="text-gray-600 ml-1">·</span>}
               </span>

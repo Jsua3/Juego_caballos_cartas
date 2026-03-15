@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
+import AvatarCircle from './AvatarCircle';
 
-export default function UserBar({ onPurchase, onStats }) {
+export default function UserBar({ onPurchase, onStats, onProfile }) {
   const { user, logout } = useAuth();
 
   if (!user) return null;
@@ -25,7 +26,21 @@ export default function UserBar({ onPurchase, onStats }) {
         >
           Sala de Apuestas
         </span>
-        <span className="text-gray-500 text-sm">{user.username}</span>
+        <motion.button
+          onClick={() => { playSound('click'); onProfile?.(); }}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.94 }}
+          className="flex items-center gap-1.5"
+          title="Ver mi perfil"
+        >
+          <AvatarCircle
+            src={user.avatar_url}
+            username={user.username}
+            size={24}
+            style={{ border: '1.5px solid rgba(180,134,20,0.4)' }}
+          />
+          <span className="text-gray-400 text-sm hover:text-gray-200 transition">{user.display_name || user.username}</span>
+        </motion.button>
       </div>
 
       {/* Derecha: puntos + botones */}

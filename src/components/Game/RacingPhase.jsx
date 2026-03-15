@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
+import AvatarCircle from '../Shared/AvatarCircle';
 
 const SUITS = [
   { id: 'oros',    name: 'Oros',    emoji: '🪙', color: '#FFD700', glow: '#FFD70060', symbol: '⬤' },
@@ -89,7 +90,7 @@ function CasinoCard({ suitId, faceDown = false, small = false }) {
 const TRACK_GRID = '1.75rem 1fr 2rem';
 const TRACK_GAP  = '0.5rem';
 
-export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players, chatMessages = [], onSendMessage, roomCode, onShowQR }) {
+export default function RacingPhase({ positions, currentCard, penaltySuit, trackCards, revealedCount = 0, players, chatMessages = [], onSendMessage, roomCode, onShowQR, onViewProfile }) {
   const logRef        = useRef(null);
   const chatEndRef    = useRef(null);   // mobile tab chat
   const sidebarEndRef = useRef(null);   // desktop sidebar chat
@@ -245,14 +246,20 @@ export default function RacingPhase({ positions, currentCard, penaltySuit, track
                         <div style={{ animation: isWinning ? 'card-bounce 1s ease-in-out infinite' : 'none' }}>
                           <CasinoCard suitId={p.betSuit} small />
                         </div>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                          style={{
-                            background: `${suit?.color}25`,
-                            border: `2px solid ${isMe ? '#FFD700' : suit?.color}`,
-                            color: isMe ? '#FFD700' : suit?.color,
-                            boxShadow: isMe ? '0 0 10px rgba(255,215,0,0.4)' : 'none',
-                          }}>
-                          {p.username.charAt(0).toUpperCase()}
+                        <div
+                          className={!isMe ? 'cursor-pointer' : ''}
+                          onClick={() => !isMe && onViewProfile?.(p.userId)}
+                          title={!isMe ? `Ver perfil de ${p.username}` : undefined}
+                        >
+                          <AvatarCircle
+                            src={p.avatar_url}
+                            username={p.username}
+                            size={28}
+                            style={{
+                              border: `2px solid ${isMe ? '#FFD700' : suit?.color}`,
+                              boxShadow: isMe ? '0 0 10px rgba(255,215,0,0.4)' : 'none',
+                            }}
+                          />
                         </div>
                         <div className="text-center">
                           <p className="text-xs font-bold" style={{ color: isMe ? '#FFD700' : '#D1D5DB' }}>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
+import AvatarCircle from '../Shared/AvatarCircle';
 
 const SUITS = [
   { id: 'oros',    name: 'Oros',    emoji: '🪙', color: '#FFD700', glow: '#FFD70060' },
@@ -37,7 +38,7 @@ function Confetti() {
   );
 }
 
-export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeaveLobby }) {
+export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeaveLobby, onViewProfile }) {
   const { user, updatePoints } = useAuth();
   const suit = getSuit(winnerSuit);
   const myResult = results?.find((r) => r.userId === user?.id);
@@ -117,6 +118,18 @@ export default function ResultsPhase({ results, winnerSuit, onPlayAgain, onLeave
                 }}>
                   <div className="flex items-center gap-2">
                     <span>{rSuit?.emoji}</span>
+                    <div
+                      className={r.userId !== user?.id ? 'cursor-pointer' : ''}
+                      onClick={() => r.userId !== user?.id && onViewProfile?.(r.userId)}
+                      title={r.userId !== user?.id ? `Ver perfil de ${r.username}` : undefined}
+                    >
+                      <AvatarCircle
+                        src={r.avatar_url}
+                        username={r.username}
+                        size={28}
+                        style={{ border: `1.5px solid ${won ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.3)'}` }}
+                      />
+                    </div>
                     <div>
                       <p className="text-white text-sm font-medium">{r.username}</p>
                       <p className="text-gray-400 text-xs">apostó {r.betAmount?.toLocaleString()} a {rSuit?.name}</p>

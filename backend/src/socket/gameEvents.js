@@ -68,6 +68,7 @@ function broadcastRoom(io, room) {
     players: room.players.map((p) => ({
       userId:    p.userId,
       username:  p.username,
+      avatar_url: p.avatar_url ?? null,
       points:    p.points,
       betSuit:   p.betSuit,
       betAmount: p.betAmount,
@@ -210,10 +211,12 @@ module.exports = function registerGameEvents(io) {
     console.log('Socket connected:', socket.id);
 
     // ── authenticate (lobby online presence) ─────────────────────────────────
-    socket.on('authenticate', ({ token }) => {
+    socket.on('authenticate', async ({ token }) => {
       try {
         const payload = jwt.verify(token, process.env.JWT_SECRET);
-        onlineUsers.set(socket.id, { userId: payload.id, username: payload.username });
+        const [rows] = await pool.query('SELECT avatar_url FROM users WHERE id = ?', [payload.id]);
+        const avatar_url = rows[0]?.avatar_url ?? null;
+        onlineUsers.set(socket.id, { userId: payload.id, username: payload.username, avatar_url });
         broadcastOnlineUsers(io);
       } catch { /* token inválido, ignorar */ }
     });
@@ -231,7 +234,7 @@ module.exports = function registerGameEvents(io) {
 
       let userRow;
       try {
-        const [rows] = await pool.query('SELECT points FROM users WHERE id = ?', [userId]);
+        const [rows] = await pool.query('SELECT points, avatar_url FROM users WHERE id = ?', [userId]);
         if (rows.length === 0) return socket.emit('error', { message: 'User not found' });
         userRow = rows[0];
       } catch {
@@ -283,13 +286,14 @@ module.exports = function registerGameEvents(io) {
       }
 
       const player = {
-        socketId:  socket.id,
+        socketId:   socket.id,
         userId,
         username,
-        points:    userRow.points,
-        betSuit:   null,
-        betAmount: null,
-        isReady:   false,
+        avatar_url: userRow.avatar_url ?? null,
+        points:     userRow.points,
+        betSuit:    null,
+        betAmount:  null,
+        isReady:    false,
       };
       room.players.push(player);
       if (!room.ownerId) room.ownerId = userId;

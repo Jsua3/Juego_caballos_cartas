@@ -1,8 +1,9 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http');
+const http    = require('http');
+const path    = require('path');
 const { Server } = require('socket.io');
-const cors = require('cors');
+const cors    = require('cors');
 
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
@@ -24,6 +25,7 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
 }));
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
