@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth, API_URL } from '../../context/AuthContext';
@@ -63,158 +63,38 @@ function Stat({ label, value, highlight }) {
 }
 
 // ── OnlineUserAvatar ──────────────────────────────────────────────────────────
-function OnlineUserAvatar({ player, isFriend, isSelf, onViewProfile, onOpenChat, onJoinRoom }) {
-  const [popup, setPopup] = useState(null); // { top, left } or null
-  const avatarRef = useRef(null);
-  const popupRef = useRef(null);
-  const hideTimerRef = useRef(null);
-  const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
-
-  const openPopup = () => {
-    if (!avatarRef.current) return;
-    const rect = avatarRef.current.getBoundingClientRect();
-    const popupW = 200;
-    let left = rect.left + rect.width / 2 - popupW / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth - popupW - 8));
-    setPopup({ bottom: window.innerHeight - rect.top + 8, left });
-  };
-
-  const handleMouseEnter = () => {
-    if (isTouch) return;
-    clearTimeout(hideTimerRef.current);
-    openPopup();
-  };
-
-  const handleMouseLeave = () => {
-    if (isTouch) return;
-    hideTimerRef.current = setTimeout(() => setPopup(null), 150);
-  };
-
-  const handlePopupMouseEnter = () => {
-    if (isTouch) return;
-    clearTimeout(hideTimerRef.current);
-  };
-
-  const handlePopupMouseLeave = () => {
-    if (isTouch) return;
-    hideTimerRef.current = setTimeout(() => setPopup(null), 150);
-  };
-
-  const handleClick = () => {
-    if (!isTouch) return;
-    if (isSelf) return;
-    onViewProfile(player.userId);
-  };
-
-  const close = () => setPopup(null);
-
+function OnlineUserAvatar({ player, isFriend, isSelf, onViewProfile }) {
   const border = isFriend
-    ? '2px solid rgba(255,215,0,0.6)'
+    ? '2px solid rgba(255,215,0,0.65)'
     : '2px solid rgba(255,255,255,0.15)';
 
+  const handleClick = () => {
+    if (isSelf) return;
+    onViewProfile(player);
+  };
+
   return (
-    <>
-      <div
-        ref={avatarRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-        className="flex flex-col items-center gap-1 shrink-0"
-        style={{ cursor: isSelf ? 'default' : 'pointer' }}
-      >
-        <div style={{ border, borderRadius: '50%', padding: 2 }}>
-          <AvatarCircle src={player.avatar_url} username={player.username} size={44} />
-        </div>
-        <span
-          className="text-xs text-center leading-tight max-w-[52px] truncate"
-          style={{ color: isFriend ? '#FFD700' : 'rgba(255,255,255,0.7)' }}
-        >
-          {player.username}
-        </span>
-      </div>
-
-      {/* Popup */}
-      {popup && !isSelf && (
-        <div
-          ref={popupRef}
-          onMouseEnter={handlePopupMouseEnter}
-          onMouseLeave={handlePopupMouseLeave}
-          style={{
-            position: 'fixed',
-            bottom: popup.bottom,
-            left: popup.left,
-            width: 200,
-            zIndex: 9999,
-            background: 'linear-gradient(180deg, #0d1f12, #091508)',
-            border: '1px solid rgba(180,134,20,0.3)',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
-            padding: '12px',
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-2">
-            <AvatarCircle src={player.avatar_url} username={player.username} size={36} />
-            <div>
-              <p className="text-white text-sm font-bold leading-tight">{player.username}</p>
-              <p className="text-green-400 text-xs flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                En línea
-              </p>
-            </div>
-          </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginBottom: 8 }} />
-
-          {/* Actions */}
-          <div className="flex flex-col gap-1.5">
-            {player.roomCode && isFriend && (
-              <PopupBtn
-                icon="🎮"
-                label={`Unirse — ${player.roomCode}`}
-                onClick={() => { close(); onJoinRoom(player.roomCode); }}
-                accent
-              />
-            )}
-            {isFriend && (
-              <PopupBtn
-                icon="💬"
-                label="Chatear"
-                onClick={() => { close(); onOpenChat(player); }}
-              />
-            )}
-            {!isFriend && (
-              <PopupBtn
-                icon="➕"
-                label="Agregar amigo"
-                onClick={() => { close(); onViewProfile(player.userId); }}
-              />
-            )}
-            <PopupBtn
-              icon="👤"
-              label="Ver perfil"
-              onClick={() => { close(); onViewProfile(player.userId); }}
-            />
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-function PopupBtn({ icon, label, onClick, accent }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-left transition"
-      style={{
-        background: accent ? 'rgba(180,134,20,0.15)' : 'rgba(255,255,255,0.04)',
-        border: accent ? '1px solid rgba(180,134,20,0.3)' : '1px solid rgba(255,255,255,0.06)',
-        color: accent ? '#FFD700' : 'rgba(255,255,255,0.8)',
-      }}
+    <motion.div
+      onClick={handleClick}
+      whileHover={!isSelf ? { scale: 1.12, y: -4 } : {}}
+      whileTap={!isSelf ? { scale: 0.94 } : {}}
+      transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+      className="flex flex-col items-center gap-1 shrink-0"
+      style={{ cursor: isSelf ? 'default' : 'pointer' }}
     >
-      <span>{icon}</span>
-      <span className="truncate">{label}</span>
-    </button>
+      <div style={{ border, borderRadius: '50%', padding: 2 }}>
+        <AvatarCircle src={player.avatar_url} username={player.username} size={44} />
+      </div>
+      <span
+        className="text-xs text-center leading-tight max-w-[56px] truncate"
+        style={{ color: isFriend ? '#FFD700' : 'rgba(255,255,255,0.7)' }}
+      >
+        {player.username}
+      </span>
+      {isSelf && (
+        <span className="text-green-400" style={{ fontSize: 8, marginTop: -2 }}>tú</span>
+      )}
+    </motion.div>
   );
 }
 
@@ -564,8 +444,6 @@ export default function LobbyPage({ onJoinRoom, onlinePlayers = [], onViewProfil
                 isFriend={friendIds.has(p.userId)}
                 isSelf={p.userId === user?.id}
                 onViewProfile={onViewProfile || (() => {})}
-                onOpenChat={onOpenChat || (() => {})}
-                onJoinRoom={onJoinRoom}
               />
             ))}
           </div>

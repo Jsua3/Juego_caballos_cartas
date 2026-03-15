@@ -19,7 +19,7 @@ function StatBox({ label, value, highlight }) {
   );
 }
 
-export default function PublicProfileModal({ userId, onClose, onSendMessage }) {
+export default function PublicProfileModal({ userId, onClose, onSendMessage, roomCode, onJoinRoom }) {
   const { token } = useAuth();
   const [profile, setProfile]           = useState(null);
   const [loading, setLoading]           = useState(true);
@@ -131,40 +131,60 @@ export default function PublicProfileModal({ userId, onClose, onSendMessage }) {
 
             {/* Friendship actions */}
             {friendship.status !== 'self' && (
-              <div className="flex gap-2 mt-1">
-                {friendship.status === 'none' && (
+              <div className="flex flex-col gap-2 mt-1">
+                {/* Unirse a sala (solo si está en sala esperando y son amigos) */}
+                {roomCode && friendship.status === 'accepted' && (
                   <motion.button
-                    onClick={sendFriendRequest}
-                    disabled={fsLoading}
-                    whileHover={{ scale: 1.03 }}
+                    onClick={() => { playSound('advance'); onClose(); onJoinRoom?.(roomCode); }}
+                    whileHover={{ scale: 1.03, boxShadow: '0 0 22px rgba(180,134,20,0.4)' }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex-1 py-2 rounded-xl text-xs font-bold disabled:opacity-50"
-                    style={{ background: 'rgba(255,215,0,0.13)', border: '1px solid rgba(255,215,0,0.3)', color: '#FFD700', fontFamily: "'Cinzel', serif" }}
+                    className="w-full py-2.5 rounded-xl text-sm font-bold"
+                    style={{
+                      background: 'linear-gradient(135deg, #8B6400, #C09020, #D4A835)',
+                      color: '#000',
+                      fontFamily: "'Cinzel', serif",
+                      boxShadow: '0 0 12px rgba(180,134,20,0.25)',
+                    }}
                   >
-                    + Agregar amigo
+                    🎮 Unirse a sala {roomCode}
                   </motion.button>
                 )}
-                {friendship.status === 'sent' && (
-                  <div className="flex-1 py-2 rounded-xl text-xs text-center text-gray-500" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-                    Solicitud enviada
-                  </div>
-                )}
-                {friendship.status === 'received' && (
-                  <div className="flex-1 py-2 rounded-xl text-xs text-center text-yellow-500" style={{ border: '1px solid rgba(255,215,0,0.2)' }}>
-                    Te envió solicitud
-                  </div>
-                )}
-                {friendship.status === 'accepted' && (
-                  <motion.button
-                    onClick={() => { playSound('click'); onClose(); onSendMessage?.({ id: userId, username: profile.username, display_name: profile.display_name, avatar_url: profile.avatar_url }); }}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="flex-1 py-2 rounded-xl text-xs font-bold"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#E5E7EB' }}
-                  >
-                    💬 Enviar mensaje
-                  </motion.button>
-                )}
+
+                <div className="flex gap-2">
+                  {friendship.status === 'none' && (
+                    <motion.button
+                      onClick={sendFriendRequest}
+                      disabled={fsLoading}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
+                      style={{ background: 'rgba(255,215,0,0.13)', border: '1px solid rgba(255,215,0,0.3)', color: '#FFD700', fontFamily: "'Cinzel', serif" }}
+                    >
+                      ➕ Agregar amigo
+                    </motion.button>
+                  )}
+                  {friendship.status === 'sent' && (
+                    <div className="flex-1 py-2.5 rounded-xl text-sm text-center text-gray-500" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                      Solicitud enviada ✓
+                    </div>
+                  )}
+                  {friendship.status === 'received' && (
+                    <div className="flex-1 py-2.5 rounded-xl text-sm text-center text-yellow-500" style={{ border: '1px solid rgba(255,215,0,0.2)' }}>
+                      📩 Te envió solicitud
+                    </div>
+                  )}
+                  {friendship.status === 'accepted' && (
+                    <motion.button
+                      onClick={() => { playSound('click'); onClose(); onSendMessage?.({ id: userId, username: profile.username, display_name: profile.display_name, avatar_url: profile.avatar_url }); }}
+                      whileHover={{ scale: 1.03, boxShadow: '0 0 16px rgba(59,130,246,0.35)' }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold"
+                      style={{ background: 'linear-gradient(135deg, #1E3A8A, #2563EB)', color: '#fff', border: 'none', fontFamily: "'Cinzel', serif" }}
+                    >
+                      💬 Chatear
+                    </motion.button>
+                  )}
+                </div>
               </div>
             )}
           </>

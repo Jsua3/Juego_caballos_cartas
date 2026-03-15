@@ -49,6 +49,7 @@ export default function CarreraDeCaballos() {
   const [showStats,      setShowStats]      = useState(false);
   const [showProfile,    setShowProfile]    = useState(false);
   const [publicProfileId, setPublicProfileId] = useState(null);
+  const [publicProfileRoomCode, setPublicProfileRoomCode] = useState(null);
   const [chatMessages,   setChatMessages]   = useState([]);
   const [socketError,    setSocketError]    = useState('');
   const [notification,   setNotification]   = useState('');
@@ -411,7 +412,10 @@ export default function CarreraDeCaballos() {
         <LobbyPage
           onJoinRoom={handleJoinRoom}
           onlinePlayers={onlinePlayers}
-          onViewProfile={(id) => setPublicProfileId(id)}
+          onViewProfile={(player) => {
+            setPublicProfileId(player.userId);
+            setPublicProfileRoomCode(player.roomCode || null);
+          }}
           onOpenChat={(friend) => {
             setFriendsPanelMsg(friend);
             setShowFriends(true);
@@ -490,9 +494,16 @@ export default function CarreraDeCaballos() {
       {publicProfileId && (
         <PublicProfileModal
           userId={publicProfileId}
-          onClose={() => setPublicProfileId(null)}
+          roomCode={publicProfileRoomCode}
+          onJoinRoom={(code) => {
+            setPublicProfileId(null);
+            setPublicProfileRoomCode(null);
+            handleJoinRoom(code);
+          }}
+          onClose={() => { setPublicProfileId(null); setPublicProfileRoomCode(null); }}
           onSendMessage={(friend) => {
             setPublicProfileId(null);
+            setPublicProfileRoomCode(null);
             setFriendsPanelMsg(friend);
             setShowFriends(true);
             setFriendsBadge(0);
