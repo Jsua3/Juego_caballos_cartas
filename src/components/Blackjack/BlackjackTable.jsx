@@ -1,5 +1,6 @@
 import BlackjackCard from './BlackjackCard';
 import { useAuth } from '../../context/AuthContext';
+import AvatarCircle from '../Shared/AvatarCircle';
 
 function HandDisplay({ hand, small = false, highlight = false }) {
   const val = hand?.cards?.length ? computeHandValue(hand.cards) : 0;
@@ -137,10 +138,12 @@ export default function BlackjackTable({ players = [], dealer = {}, currentTurn,
               }}
             >
               {/* Avatar */}
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                style={{ background: 'rgba(184,134,11,0.15)', border: `2px solid ${isMe ? '#FFD700' : 'rgba(184,134,11,0.3)'}`, color: '#FFD700' }}>
-                {p.username.charAt(0).toUpperCase()}
-              </div>
+              <AvatarCircle
+                src={p.avatar_url}
+                username={p.username}
+                size={32}
+                style={{ border: `2px solid ${isMe ? '#FFD700' : 'rgba(184,134,11,0.3)'}` }}
+              />
               <p className="text-white text-xs font-medium">{p.username}{isMe ? ' (tú)' : ''}</p>
 
               {/* Hands */}

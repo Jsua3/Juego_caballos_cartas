@@ -83,8 +83,9 @@ async function startDeal(io, room) {
     }
 
     bj.playerStates[userId] = {
-      username: player.username,
-      points: player.points,
+      username:   player.username,
+      avatar_url: player.avatar_url ?? null,
+      points:     player.points,
       hands: [
         { cards: [], bet: amount, doubled: false, isSplit: false, done: false, outcome: null, payout: 0 },
       ],
@@ -124,10 +125,11 @@ async function startDeal(io, room) {
 
   const dealPayload = {
     players: dealPlayers.map((uid) => ({
-      userId: uid,
-      username: bj.playerStates[uid].username,
-      hands: bj.playerStates[uid].hands,
-      points: bj.playerStates[uid].points,
+      userId:     uid,
+      username:   bj.playerStates[uid].username,
+      avatar_url: bj.playerStates[uid].avatar_url ?? null,
+      hands:      bj.playerStates[uid].hands,
+      points:     bj.playerStates[uid].points,
     })),
     dealer: { visibleCard: dealerVisible, cardCount: 2 },
     dealerHasBJ: dealerBJ,
@@ -309,7 +311,8 @@ async function resolveRound(io, room) {
 
     results.push({
       userId,
-      username: playerState.username,
+      username:   playerState.username,
+      avatar_url: playerState.avatar_url ?? null,
       hands: playerState.hands.map((h) => ({
         cards: h.cards,
         value: handValue(h.cards),

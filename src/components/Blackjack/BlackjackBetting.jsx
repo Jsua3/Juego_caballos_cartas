@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
+import AvatarCircle from '../Shared/AvatarCircle';
 
 const QUICK_CHIPS = [50, 100, 200, 500];
 const RADIUS = 45;
@@ -225,10 +226,11 @@ export default function BlackjackBetting({ timeLimit, players, betsPlaced = [], 
                 animate={bet ? { x: [0, 4, 0] } : {}}
                 transition={{ duration: 0.3 }}
               >
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'rgba(184,134,11,0.15)', border: '1px solid rgba(184,134,11,0.3)', color: '#FFD700' }}>
-                  {p.username.charAt(0).toUpperCase()}
-                </div>
+                <AvatarCircle
+                  src={p.avatar_url}
+                  username={p.username}
+                  size={24}
+                />
                 <span className="text-gray-300 text-sm flex-1">{p.username}</span>
                 <AnimatePresence>
                   {bet ? (

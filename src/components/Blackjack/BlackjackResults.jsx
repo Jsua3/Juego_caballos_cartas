@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BlackjackCard from './BlackjackCard';
 import { useAuth } from '../../context/AuthContext';
 import { playSound } from '../../utils/sound';
+import AvatarCircle from '../Shared/AvatarCircle';
 
 const OUTCOME_STYLE = {
   win:       { label: 'WIN',       bg: '#065F46', color: '#34D399', border: '#10B981', glow: 'rgba(52,211,153,0.35)' },
@@ -95,10 +96,12 @@ export default function BlackjackResults({ results = [], dealerCards = [], deale
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                    style={{ background: 'rgba(184,134,11,0.15)', border: '1.5px solid rgba(184,134,11,0.4)', color: '#FFD700' }}>
-                    {r.username.charAt(0).toUpperCase()}
-                  </div>
+                  <AvatarCircle
+                    src={r.avatar_url}
+                    username={r.username}
+                    size={32}
+                    style={{ border: '1.5px solid rgba(184,134,11,0.4)' }}
+                  />
                   <span className="text-white font-medium text-sm">{r.username}{isMe ? ' (tú)' : ''}</span>
                 </div>
                 <motion.span
