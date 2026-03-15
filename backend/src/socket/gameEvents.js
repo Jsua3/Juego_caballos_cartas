@@ -25,7 +25,16 @@ const rooms = new Map();
 const IDLE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutos
 
 function broadcastOnlineUsers(io) {
-  const list = Array.from(onlineUsers.values());
+  const userRooms = new Map();
+  for (const room of rooms.values()) {
+    if (room.status === 'waiting') {
+      for (const p of room.players) userRooms.set(p.userId, room.roomCode);
+    }
+  }
+  const list = Array.from(onlineUsers.values()).map(u => ({
+    ...u,
+    roomCode: userRooms.get(u.userId) || null,
+  }));
   io.emit('online_users', list);
 }
 

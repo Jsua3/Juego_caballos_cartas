@@ -408,7 +408,16 @@ export default function CarreraDeCaballos() {
 
       {/* Phase rendering */}
       {phase === 'lobby' && (
-        <LobbyPage onJoinRoom={handleJoinRoom} onlinePlayers={onlinePlayers} />
+        <LobbyPage
+          onJoinRoom={handleJoinRoom}
+          onlinePlayers={onlinePlayers}
+          onViewProfile={(id) => setPublicProfileId(id)}
+          onOpenChat={(friend) => {
+            setFriendsPanelMsg(friend);
+            setShowFriends(true);
+            setFriendsBadge(0);
+          }}
+        />
       )}
 
       {phase === 'waiting' && (
