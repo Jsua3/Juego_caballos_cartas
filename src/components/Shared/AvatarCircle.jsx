@@ -1,17 +1,20 @@
 import { useState } from 'react';
+import { API_URL } from '../../context/AuthContext';
 
 export default function AvatarCircle({ src, username, size = 28, style, className }) {
   const [imgError, setImgError] = useState(false);
+  // Las rutas /uploads/... vienen del backend, no del servidor React
+  const imgSrc = src && src.startsWith('/uploads/') ? `${API_URL}${src}` : src;
 
   const base = {
     width: size, height: size, borderRadius: '50%', flexShrink: 0,
     ...style,
   };
 
-  if (src && !imgError) {
+  if (imgSrc && !imgError) {
     return (
       <img
-        src={src}
+        src={imgSrc}
         alt={username}
         onError={() => setImgError(true)}
         className={className}
